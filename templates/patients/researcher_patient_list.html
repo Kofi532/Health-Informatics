@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Researcher Patient List - ASTA624 PROJECT{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .research-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+    }
+    /* Structured micro-sections inside the table row */
+    .content-stream-section {
+        border-left: 2px solid #e2e8f0;
+        padding-left: 0.75rem;
+    }
+    .content-stream-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+    }
+    .patient-meta-text {
+        font-size: 0.9rem;
+        color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+  <!-- Top Action Header -->
+  <div class="d-md-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 fw-bold text-gray-900 mb-1">Researcher Dashboard</h1>
+      <p class="text-muted mb-0">Monitor patient activity tracks, clinical data streams, and structural assessment metrics.</p>
+    </div>
+    <div class="mt-3 mt-md-0">
+      <a class="btn btn-success px-4 py-2 fw-medium shadow-sm d-inline-flex align-items-center gap-2 rounded-3" href="{% url 'patients:export_research_excel' %}">
+        <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export to Excel Workbook
+      </a>
+    </div>
+  </div>
+
+  <!-- Primary Analytics Ledger Card -->
+  <div class="card research-card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-top mb-0">
+          <thead class="table-light text-secondary small text-uppercase">
+            <tr>
+              <th class="ps-4 py-3">Patient Profile</th>
+              <th class="py-3">DOB / Demographics</th>
+              <th class="py-3" style="width: 50%;">Recent Activity & Clinical Data Log</th>
+              <th class="pe-4 py-3 text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody class="border-top-0">
+            {% for item in patient_content %}
+              <tr class="border-bottom">
+                <!-- Patient Column -->
+                <td class="ps-4 py-4">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-placeholder rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.95rem;">
+                      {{ item.patient.first_name|slice:":1" }}{% if item.patient.last_name %}{{ item.patient.last_name|slice:":1" }}{% endif %}
+                    </div>
+                    <div>
+                      <div class="fw-bold text-dark fs-6">{{ item.patient.first_name }} {{ item.patient.last_name }}</div>
+                      <span class="text-muted small d-block mt-0.5"><i class="bi bi-envelope me-1"></i>{{ item.patient.email|default:"—" }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Demographics Column -->
+                <td class="py-4 patient-meta-text">
+                  <div class="mb-1">
+                    <span class="text-muted small">DOB:</span> <span class="fw-medium">{{ item.patient.date_of_birth|date:"Y-m-d"|default:"—" }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted small">Gender:</span> <span class="badge bg-light text-dark border px-2 py-1">{{ item.patient.get_gender_display }}</span>
+                  </div>
+                </td>
+
+                <!-- Deep Aggregated Patient Activity Column -->
+                <td class="py-4">
+                  <div class="row g-3">
+                    
+                    <!-- Formatted Content Streams -->
+                    <div class="col-md-6">
+                      <!-- Blog Sub-Stream -->
+                      <div class="content-stream-section mb-3">
+                        <div class="content-stream-title mb-1"><i class="bi bi-journal-text text-primary me-1"></i> Posts</div>
+                        {% for post in item.blog_posts %}
+                          <div class="small text-truncate text-secondary">• {{ post.title }} <span class="text-muted text-xs">({{ post.get_category_display }})</span></div>
+                        {% empty %}
+                          <div class="text-muted small italic opacity-75">No blog posts found.</div>
+                        {% endfor %}
+                      </div>
+
+                      <!-- Comments Sub-Stream -->
+                      <div class="content-stream-section">
+                        <div class="content-stream-title mb-1"><i class="bi bi-chat-left-text text-secondary me-1"></i> Comments</div>
+                        {% for comment in item.comments %}
+                          <div class="small text-secondary text-truncate">• "{{ comment.content|truncatechars:45 }}" <span class="text-muted text-xs">({{ comment.post.get_category_display }})</span></div>
+                        {% empty %}
+                          <div class="text-muted small italic opacity-75">No comments logged.</div>
+                        {% endfor %}
+                      </div>
+                    </div>
+
+                    <!-- Formatted Clinical Streams -->
+                    <div class="col-md-6">
+                      <!-- Prescriptions & Labs -->
+                      <div class="content-stream-section mb-3">
+                        <div class="content-stream-title mb-1"><i class="bi bi-capsule text-warning me-1"></i> Prescriptions & Labs</div>
+                        {% for prescription in item.prescriptions %}
+                          <div class="small text-secondary">• <span class="fw-medium text-dark">{{ prescription.title }}</span></div>
+                        {% empty %}{% endfor %}
+                        
+                        {% for lab in item.lab_results %}
+                          <div class="small text-secondary">• {{ lab.test_name }}: <strong class="text-dark">{{ lab.result_value }}</strong>{% if lab.unit %} {{ lab.unit }}{% endif %}</div>
+                        {% empty %}{% endfor %}
+
+                        {% if not item.prescriptions and not item.lab_results %}
+                          <div class="text-muted small italic opacity-75">No medical records on file.</div>
+                        {% endif %}
+                      </div>
+
+                      <!-- Diagnostics Summary Block -->
+                      <div class="content-stream-section">
+                        <div class="content-stream-title mb-1"><i class="bi bi-clipboard2-pulse text-danger me-1"></i> Status & Screenings</div>
+                        {% for assessment in item.assessments %}
+                          <div class="small text-secondary mb-1">
+                            • {{ assessment.get_assessment_type_display }}
+                            {% if assessment.hba1c %}<span class="badge bg-danger-subtle text-danger px-1.5 py-0.5 rounded text-xs ms-1">HbA1c {{ assessment.hba1c }}</span>{% endif %}
+                            {% if assessment.fasting_glucose %}<span class="badge bg-warning-subtle text-warning-emphasis px-1.5 py-0.5 rounded text-xs ms-1">FBG {{ assessment.fasting_glucose }}</span>{% endif %}
+                          </div>
+                        {% empty %}{% endfor %}
+
+                        {% if item.diagnosis_summary %}
+                          <div class="mt-2 pt-1.5 border-top border-dashed small">
+                            <span class="text-muted">Diagnosis:</span>
+                            <span class="badge bg-info-subtle text-info-emphasis px-2 py-1 ms-1 fw-semibold">{{ item.diagnosis_summary.get_status_display }}</span>
+                            <span class="text-muted text-xs ms-1">({{ item.diagnosis_summary.get_confirmation_status_display }})</span>
+                          </div>
+                        {% else %}
+                          <div class="text-muted small italic opacity-75">No calculated diagnostic flags yet.</div>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                  </div>
+                </td>
+
+                <!-- Action Accessor Column -->
+                <td class="pe-4 py-4 text-end align-middle">
+                  <a class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-medium shadow-sm transition-all" href="{% url 'patients:researcher_patient_detail' item.patient.pk %}">
+                    View Dossier <i class="bi bi-arrow-right-short ms-0.5"></i>
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-5 text-muted">
+                  <i class="bi bi-people fs-1 d-block mb-2 text-black-50"></i>
+                  There are currently no patients linked into this study record framework.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

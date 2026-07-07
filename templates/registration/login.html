@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login - ASTA624 PROJECT{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .auth-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+        background-color: #ffffff;
+    }
+    .auth-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        background-color: #eff6ff;
+        color: #2563eb;
+        font-size: 1.25rem;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center my-4">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+            
+            <!-- Error Handling at the top of the interface block -->
+            {% if form.errors %}
+                <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2 p-3 mb-3 small rounded-3" style="background-color: #fef2f2; color: #991b1b;">
+                    <i class="bi bi-exclamation-circle-fill text-danger fs-5"></i>
+                    <div>Invalid credentials. Please double-check your username or password and try again.</div>
+                </div>
+            {% endif %}
+
+            <div class="card auth-card p-3 p-sm-4">
+                <div class="card-body">
+                    <!-- Modern Branding Header Section -->
+                    <div class="text-center">
+                        <div class="auth-icon-wrapper shadow-sm">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-1">Welcome Back</h3>
+                        <p class="text-muted small mb-4">Please log in to your project portal to proceed.</p>
+                    </div>
+
+                    <!-- Main Form Element -->
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+                        
+                        <!-- Username Field Group -->
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label small fw-semibold text-secondary d-flex align-items-center gap-1.5">
+                                <i class="bi bi-person text-muted"></i> Username
+                            </label>
+                            <input type="text" name="username" autofocus required id="id_username" class="form-control rounded-3 py-2" placeholder="Enter your username">
+                        </div>
+                        
+                        <!-- Password Field Group -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label for="id_password" class="form-label small fw-semibold text-secondary d-flex align-items-center gap-1.5 mb-1">
+                                    <i class="bi bi-key text-muted"></i> Password
+                                </label>
+                            </div>
+                            <input type="password" name="password" required id="id_password" class="form-control rounded-3 py-2" placeholder="••••••••">
+                            
+                            <!-- Interactive Option Element -->
+                            <div class="form-check mt-2.5">
+                                <input class="form-check-input border-secondary-subtle" type="checkbox" id="show-login-password">
+                                <label class="form-check-label text-muted small user-select-none" for="show-login-password">
+                                    Show hidden password
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- CTA Action Button Frame -->
+                        <div class="d-grid mt-4">
+                            <button class="btn btn-primary py-2.5 fw-medium shadow-sm rounded-3" type="submit">
+                                Sign In <i class="bi bi-arrow-right-short ms-0.5"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Bottom Helper Footer Routing Link -->
+                    <div class="text-center mt-4 pt-2 border-top border-light">
+                        <span class="text-muted small">Don't have an account?</span>
+                        <a class="text-decoration-none small fw-semibold ms-1 text-primary" href="{% url 'patients:signup' %}">Sign up here</a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggle = document.getElementById('show-login-password');
+    const passwordInput = document.getElementById('id_password');
+
+    if (toggle && passwordInput) {
+        toggle.addEventListener('change', function () {
+            passwordInput.type = this.checked ? 'text' : 'password';
+        });
+    }
+});
+</script>
+{% endblock %}

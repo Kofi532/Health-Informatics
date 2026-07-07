@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Doctor Dashboard - ASTA624 PROJECT{% endblock %}
+
+{% block extra_styles %}
+<style>
+  body { background: #f4f7fb; }
+  .page-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
+  .patient-card { padding: 1rem; border-radius: 8px; background: #f8fafc; border: 1px solid #e6eef6; }
+  .badge-alert { background: #fee2e2; color: #991b1b; padding: 0.3rem 0.6rem; border-radius: 999px; font-weight:700; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-card">
+    <h1 class="h4">Doctor Dashboard – Patient Alerts</h1>
+    <p class="text-muted">Patients with alerts in the last 48 hours, sorted by alert count.</p>
+
+    {% if profiles_with_counts %}
+      <div class="row g-3">
+        {% for item in profiles_with_counts %}
+          <div class="col-md-6">
+            <div class="patient-card">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="fw-bold">{{ item.profile.user.get_full_name|default:item.profile.user.username }}</div>
+                <div class="badge-alert">{{ item.alert_count }} alert{{ item.alert_count|pluralize }}</div>
+              </div>
+              <div class="text-muted small mb-2">
+                <strong>Gestational age:</strong> {{ item.profile.gestational_age_weeks }} weeks |
+                <strong>Target fasting glucose:</strong> {{ item.profile.target_fasting_glucose }} mg/dL
+              </div>
+              {% for alert in item.alerts %}
+                <div class="mb-2 p-2 bg-white rounded border">
+                  <div class="small text-uppercase text-muted">{{ alert.get_alert_type_display }}</div>
+                  <div class="mt-1">Reading: <span class="fw-bold text-danger">{{ alert.glucose_log.glucose_level }} mg/dL</span> at <span class="fw-semibold">{{ alert.glucose_log.get_meal_context_display }}</span></div>
+                  <div class="small text-muted">{{ alert.created_at|date:"Y-m-d H:i" }}</div>
+                </div>
+              {% empty %}
+                <div class="text-muted">No alerts for this patient.</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center text-muted py-4">No alerts in the last 48 hours. Great job!</div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ post.title }} - Blog{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .article-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+        background-color: #ffffff;
+    }
+    .comment-bubble {
+        border: 1px solid #f1f5f9 !important;
+        border-radius: 12px !important;
+        background-color: #ffffff;
+        margin-bottom: 0.75rem;
+    }
+    .article-lead-text {
+        font-size: 1.05rem;
+        line-height: 1.65;
+        color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Back Action Navigation Header -->
+    <div class="mb-4">
+        <a class="text-decoration-none btn btn-sm btn-link link-secondary px-0 d-inline-flex align-items-center gap-1.5 fw-medium" href="{% url 'patients:blog_list' %}?category={{ active_category }}">
+            <i class="bi bi-arrow-left text-xs"></i> Back to Blog Stream
+        </a>
+    </div>
+
+    <!-- Main Editorial Article Body -->
+    <article class="card article-card p-3 p-sm-4 mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-2">{{ post.get_category_display }}</span>
+            </div>
+            
+            <h1 class="h3 fw-bold text-gray-900 mb-2 tracking-tight">{{ post.title }}</h1>
+            
+            <div class="d-flex align-items-center gap-2 text-muted small pb-3 mb-4 border-bottom border-light">
+                <i class="bi bi-calendar-check opacity-75"></i> 
+                <span>Published on {{ post.published_at|date:'F j, Y \a\t g:i a' }}</span>
+            </div>
+
+            <!-- Parsed Main Post Content Structure -->
+            <div class="article-lead-text mt-2">
+                {{ post.body|linebreaks }}
+            </div>
+        </div>
+    </article>
+
+    <!-- Interactive Comments Tracking Framework -->
+    <section class="mt-5">
+        <div class="d-flex align-items-center gap-2 mb-3 text-dark">
+            <i class="bi bi-chat-left-text-fill text-muted fs-5"></i>
+            <h2 class="h5 fw-bold mb-0">Discussion Portal</h2>
+        </div>
+
+        <!-- Comments Bubble Display Feed -->
+        <div class="list-group list-group-flush shadow-none mb-4">
+            {% for comment in comments %}
+                <div class="list-group-item comment-bubble p-3.5">
+                    <div class="d-flex justify-content-between align-items-baseline mb-2">
+                        <div class="fw-bold text-dark d-flex align-items-center gap-1.5">
+                            <i class="bi bi-person-circle text-secondary opacity-75"></i> {{ comment.author_name|default:"Anonymous Contributor" }}
+                        </div>
+                        <span class="text-muted small text-xs d-flex align-items-center gap-1">
+                            <i class="bi bi-clock opacity-50"></i> {{ comment.created_at|date:'F j, Y \a\t g:i a' }}
+                        </span>
+                    </div>
+                    <div class="text-secondary small mt-1 ps-sm-4" style="line-height: 1.5;">
+                        {{ comment.content|linebreaks }}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="card bg-light border-0 text-center py-4 text-muted rounded-3 mb-3">
+                    <div class="card-body py-3">
+                        <i class="bi bi-chat-dots fs-3 d-block mb-1 opacity-50"></i>
+                        <span class="small">No research comments shared yet. Be the first to start the conversation!</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Submission Text Form Panel -->
+        <div class="card article-card p-3 p-sm-4 mt-4 bg-light bg-opacity-50 border-0">
+            <div class="card-body p-1">
+                <h3 class="h6 fw-bold text-dark mb-3 d-flex align-items-center gap-1.5">
+                    <i class="bi bi-reply-fill text-primary"></i> Add a New Comment
+                </h3>
+                
+                {% if user.is_authenticated %}
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <textarea id="content" name="content" rows="4" class="form-control rounded-3 border-secondary-subtle p-3" placeholder="Write your clinical notes, observation analysis, or feedback reply here..." required></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button class="btn btn-primary px-4 py-2 fw-semibold shadow-sm rounded-3" type="submit">
+                                Post Comment <i class="bi bi-send ms-1 text-xs"></i>
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="p-3 border rounded-3 bg-white d-flex align-items-center gap-2.5 small text-muted">
+                        <i class="bi bi-lock-fill text-warning fs-5"></i>
+                        <div>
+                            Please <a class="fw-semibold text-primary text-decoration-none" href="{% url 'patients:login' %}?next={{ request.path }}">log into your portal account</a> to add your research entry to this ledger list.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+{% endblock %}

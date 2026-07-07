@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Privacy Notice - ASTA624 PROJECT{% endblock %}
+
+{% block content %}
+  <div class="container py-4">
+    <div class="card">
+      <div class="card-body">
+        <h1 class="card-title">ASTA624 PROJECT Privacy Notice</h1>
+
+        <p class="lead">Last updated: <!-- insert date --> </p>
+
+        <h2>1. Introduction</h2>
+        <p>ASTA624 PROJECT is a health informatics web application designed to help manage patient glycemic health. This Privacy Notice explains what personal and health-related data we collect, why we collect it, how we protect it, and the rights available to users.</p>
+
+        <h2>2. Data We Collect</h2>
+        <p>We collect and process the following categories of information:</p>
+        <ul>
+          <li><strong>Account information:</strong> registration details such as username and email address needed to create and maintain user accounts.</li>
+          <li><strong>Patient profiles and encounters:</strong> demographic and clinical profile fields, notes about medical encounters, and related metadata.</li>
+          <li><strong>Health telemetry:</strong> vital signs and blood glucose readings recorded as <code>GlucoseLog</code> entries.</li>
+        </ul>
+
+        <h2>3. Purpose and Use of Data</h2>
+        <p>We process the above data for the following purposes:</p>
+        <ul>
+          <li>To calculate glucose statistics and summary metrics for individual patients.</li>
+          <li>To detect spikes, anomalies, or clinically relevant events in blood glucose readings and to surface alerts to care teams or users when appropriate.</li>
+          <li>To generate short-term predictions of future glucose levels to aid in patient monitoring and self-management.</li>
+          <li>To provide and maintain user accounts, authentication, and application functionality.</li>
+        </ul>
+
+        <h2>4. Legal Basis and Access</h2>
+        <p>Processing is necessary for the performance of the services provided by the application and for legitimate healthcare management purposes. Access to personal and health data is strictly limited to authenticated users with appropriate permissions within the application.</p>
+
+        <h2>5. Security</h2>
+        <p>We treat health telemetry and personal identifiers as sensitive information. Reasonable technical and organizational measures are in place to protect data from unauthorized access, alteration, disclosure, or destruction. These measures include authentication controls, access restrictions, and secure handling of exported datasets.</p>
+        <p>When data is exported for analysis or research, identifying fields are removed or pseudonymized where possible to reduce re-identification risk.</p>
+
+        <h2>6. Sharing and Disclosure</h2>
+        <p>We do not share personal health data with third parties except as required by law or with explicit consent. Internal sharing is limited to authorized personnel and system components that need the data to deliver application features (for example, analytics, alerting, or clinician dashboards).</p>
+
+        <h2>7. Data Retention</h2>
+        <p>We retain personal and clinical data for as long as required to provide the service and to meet legal or regulatory obligations. Where practical, data that is no longer needed will be deleted or anonymized.</p>
+
+        <h2>8. Your Rights</h2>
+        <p>Depending on your jurisdiction, you may have rights regarding your personal data, including the right to access, rectify, delete, or restrict processing. To exercise these rights or to request information about the data we hold about you, contact the site administrator.</p>
+
+        <h2>9. Contact</h2>
+        <p>For questions about this Privacy Notice, data access requests, or other privacy concerns, please contact the project administrator at the address listed in the application documentation.</p>
+
+        <p class="small text-muted">This Privacy Notice is a template provided for informational purposes and should be reviewed by legal counsel to ensure compliance with applicable laws and regulations before publication.</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

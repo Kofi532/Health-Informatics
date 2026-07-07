@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Prescriptions{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .prescription-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+        background-color: #ffffff;
+    }
+    /* Clinical element form styling overrides */
+    .form-control, input[type="text"], textarea {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.95rem;
+        color: #334155;
+        background-color: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .form-control:focus, input:focus, textarea:focus {
+        border-color: #93c5fd;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.06);
+    }
+    .prescription-item {
+        border: 1px solid #f1f5f9 !important;
+        border-radius: 12px !important;
+        background-color: #ffffff;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    .prescription-item:hover {
+        border-color: #cbd5e1 !important;
+        background-color: #fafafa;
+    }
+    .content-box {
+        background-color: #f8fafc;
+        border-left: 3px solid #3b82f6;
+        font-family: inherit;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} border-0 shadow-sm rounded-3 d-flex align-items-center gap-2" role="alert">
+          <i class="bi bi-info-circle-fill"></i>
+          <div>{{ message }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card prescription-card p-3 p-sm-4">
+        <div class="card-body">
+          <h1 class="h4 fw-bold text-gray-900 mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-medical text-primary"></i> Add a Prescription
+          </h1>
+          <p class="text-muted small mb-4">Draft new therapeutic orders and medication directives down in the panel below.</p>
+          
+          <form method="post" autocomplete="off">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary" for="id_title">Prescription Title / Order Subject</label>
+              {{ form.title }}
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_content">Prescription Details & Regime</label>
+              {{ form.content }}
+            </div>
+            
+            <button class="btn btn-primary px-4 py-2 fw-semibold shadow-sm rounded-3 d-inline-flex align-items-center gap-2" type="submit">
+              <i class="bi bi-plus-circle"></i> Save Prescription
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card prescription-card p-3 p-sm-4">
+        <div class="card-body">
+          <h2 class="h5 fw-bold text-gray-900 mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-muted"></i> Recent Prescription Logs
+          </h2>
+          <p class="text-muted small mb-4">Review historical pharmaceutical records validated for this profile.</p>
+          
+          <div class="list-group list-group-flush shadow-none">
+            {% for prescription in prescriptions %}
+              <div class="list-group-item prescription-item p-3">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                  <div class="fw-bold text-dark fs-6">{{ prescription.title }}</div>
+                  <span class="badge bg-light text-secondary border px-2 py-1 rounded text-xs d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-calendar3 opacity-75"></i> {{ prescription.created_at|date:"Y-m-d H:i" }}
+                  </span>
+                </div>
+                
+                <div class="content-box p-2.5 rounded-2 small text-secondary" style="white-space: pre-line;">{{ prescription.content }}</div>
+              </div>
+            {% empty %}
+              <div class="text-center py-5 text-muted bg-light rounded-3 border border-dashed">
+                <i class="bi bi-clipboard2-x fs-2 d-block mb-2 opacity-50"></i>
+                <span class="small">No tracked prescriptions linked to this dataset yet.</span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Dynamic mapping configuration step to pair raw form elements with clear placeholder suggestions
+    const titleField = document.getElementById('id_title');
+    const contentField = document.getElementById('id_content');
+
+    if (titleField) {
+        titleField.setAttribute('placeholder', 'e.g., Metformin Protocol / Lisinopril 10mg');
+    }
+    if (contentField) {
+        contentField.setAttribute('placeholder', 'Enter strict operational guidance:\n- Dosage: 500 mg\n- Frequency: Twice daily with meals\n- Duration: 3 months supply');
+        contentField.setAttribute('rows', '5');
+    }
+});
+</script>
+{% endblock %}

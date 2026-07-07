@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Blog - ASTA624 PROJECT{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .blog-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+        background-color: #ffffff;
+    }
+    /* Modern app-style category selection chips */
+    .filter-chip {
+        border-radius: 999px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    /* Clean feed list styling adjustments */
+    .feed-item {
+        border: 1px solid #f1f5f9 !important;
+        border-radius: 12px !important;
+        margin-bottom: 0.75rem;
+        background-color: #ffffff;
+        transition: all 0.2s ease-in-out;
+    }
+    .feed-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.04) !important;
+        border-color: #cbd5e1 !important;
+        background-color: #ffffff !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Top Action Heading Frame -->
+    <div class="d-md-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-gray-900 mb-1">Project Research Blog</h1>
+            <p class="text-muted mb-0">Browse knowledge streams, submit medical observations, and view discussions.</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            {% if user.is_authenticated %}
+                <a class="btn btn-sm btn-outline-secondary px-3 py-2 fw-medium rounded-3" href="{% url 'patients:logout' %}">
+                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                </a>
+            {% else %}
+                <a class="btn btn-sm btn-outline-primary px-3 py-2 fw-medium rounded-3 me-2" href="{% url 'patients:login' %}?next={% url 'patients:blog_list' %}">
+                    Login
+                </a>
+                <a class="btn btn-sm btn-primary px-3 py-2 fw-medium rounded-3 shadow-sm" href="{% url 'patients:signup' %}">
+                    Create Account
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Active Filter/Sub-blog Navigation Card -->
+    <div class="card blog-card p-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-grid-fill text-primary"></i> Filter Sub-Blogs
+        </h5>
+        <div class="d-flex flex-wrap gap-2">
+            {% for category in blog_categories %}
+                <a
+                    class="btn filter-chip {% if active_category == category.value %}btn-primary shadow-sm{% else %}btn-outline-secondary border-secondary-subtle text-secondary bg-white{% endif %}"
+                    href="{% url 'patients:blog_list' %}?category={{ category.value }}"
+                >
+                    {% if active_category == category.value %}<i class="bi bi-check-circle-fill me-1"></i>{% endif %}
+                    {{ category.label }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Inline Creator Input Section (Authenticated Users) -->
+    {% if user.is_authenticated %}
+        <div class="card blog-card p-4 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #fcfdfe 100%); border-left: 4px solid #10b981 !important;">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-pencil-square text-success"></i> New Entry: {{ active_category_label }}
+                    </h5>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded">Active Stream</span>
+                </div>
+                <p class="text-muted small mb-3">Your message will be safely stored and published straight into this study channel framework.</p>
+                
+                <form method="post" action="{% url 'patients:blog_list' %}" class="row g-2 align-items-center">
+                    {% csrf_token %}
+                    <input type="hidden" name="category" value="{{ active_category }}">
+                    <div class="col-sm-9 col-8">
+                        <input class="form-control rounded-3 py-2.5 border-secondary-subtle" type="text" name="feeling" placeholder="Share your clinical question, query, updates, or medical log note..." required>
+                    </div>
+                    <div class="col-sm-3 col-4">
+                        <button class="btn btn-success py-2.5 w-100 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-3" type="submit">
+                            Publish <i class="bi bi-send-fill text-xs"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Longitudinal Content Timeline Ledger -->
+    <div class="mb-3 d-flex align-items-center gap-2 text-secondary px-1">
+        <i class="bi bi-chat-square-text"></i> <span class="small text-uppercase fw-bold tracking-wider">Timeline Feed Logs</span>
+    </div>
+
+    <div class="list-group list-group-flush shadow-none">
+        {% for post in posts %}
+            <a class="list-group-item list-group-item-action feed-item d-flex justify-content-between align-items-center p-3.5" href="{% url 'patients:blog_detail' post.pk %}?category={{ active_category }}">
+                <div class="d-flex align-items-center gap-3 text-truncate">
+                    <div class="avatar-box rounded-3 bg-light text-secondary d-none d-sm-flex align-items-center justify-content-center border" style="width: 44px; height: 44px; flex-shrink: 0;">
+                        <i class="bi bi-file-text fs-5"></i>
+                    </div>
+                    <div class="text-truncate">
+                        <div class="fw-bold text-dark fs-6 mb-1 text-truncate">{{ post.title }}</div>
+                        <div class="text-muted small d-flex align-items-center gap-1.5">
+                            <i class="bi bi-calendar-event opacity-75"></i> {{ post.published_at|date:'F j, Y, g:i a' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="ms-3 flex-shrink-0">
+                    <span class="btn btn-sm btn-light border text-primary fw-medium px-3 rounded-pill">
+                        Open <i class="bi bi-chevron-right ms-0.5 text-xs"></i>
+                    </span>
+                </div>
+            </a>
+        {% empty %}
+            <div class="card blog-card text-center py-5 text-muted">
+                <div class="card-body">
+                    <i class="bi bi-chat-square-dots fs-1 d-block mb-2 text-black-50"></i>
+                    No data entries or research records are available under the current classification filter.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+{% endblock %}

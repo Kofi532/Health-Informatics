@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-md-5">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+            <div>
+              <h2 class="h3 mb-1">Log glucose reading</h2>
+              <p class="text-muted mb-0">Capture today’s reading to support your glucose tracking and trend review.</p>
+            </div>
+            <span class="badge bg-primary-subtle text-primary mt-2 mt-md-0">Quick entry</span>
+          </div>
+
+          <div class="alert alert-light border mb-4">
+            <strong>Tip:</strong> Enter your latest glucose value along with the meal context to keep your records consistent and useful for trend monitoring.
+          </div>
+
+          <form method="post" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-6">
+              <label class="form-label" for="id_date">{{ form.date.label }}</label>
+              {{ form.date|safe }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="id_time">{{ form.time.label }}</label>
+              {{ form.time|safe }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="id_glucose_level">{{ form.glucose_level.label }}</label>
+              {{ form.glucose_level|safe }}
+              <datalist id="glucose-presets">
+                <option value="60">
+                <option value="70">
+                <option value="80">
+                <option value="90">
+                <option value="95">
+                <option value="100">
+                <option value="110">
+                <option value="120">
+                <option value="140">
+                <option value="160">
+                <option value="180">
+                <option value="200">
+              </datalist>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="id_meal_context">{{ form.meal_context.label }}</label>
+              {{ form.meal_context|safe }}
+            </div>
+            <div class="col-12 d-grid d-md-flex justify-content-md-end mt-3">
+              <button class="btn btn-primary px-4" type="submit">Save reading</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{
+  "name": "mHealth PWA Prototype",
+  "short_name": "mHealth",
+  "start_url": "/static/pwa/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "Prototype PWA client for the mHealth Django backend",
+  "icons": []
+}

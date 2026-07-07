@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Patient Dashboard - ASTA624 PROJECT{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Global dashboard design updates */
+    .dashboard-wrapper {
+        background-color: transparent;
+    }
+    .custom-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+        background-color: #ffffff;
+    }
+    .metric-box {
+        padding: 1.25rem;
+        border-radius: 14px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    .metric-box.primary { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); }
+    .metric-box.safe { background: linear-gradient(135deg, #059669 0%, #065f46 100%); }
+    .metric-box.anomalies { background: linear-gradient(135deg, #ea580c 0%, #9a3412 100%); }
+    
+    /* Soft blending style for anomaly row data alerts */
+    tr.anomaly-row { 
+        background-color: #fff1f2 !important; 
+        color: #9f1239;
+    }
+    tr.anomaly-row td {
+        background-color: transparent !important;
+    }
+
+    /* Form customization fallback targets for Django fields */
+    .django-form-row label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.25rem;
+    }
+    .django-form-row input, .django-form-row select, .django-form-row textarea {
+        display: block;
+        width: 100%;
+        padding: 0.475rem 0.75rem;
+        font-size: 0.95rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #1e293b;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .django-form-row input:focus, .django-form-row select:focus {
+        border-color: #818cf8;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="dashboard-wrapper">
+        <div class="d-md-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold text-gray-900 mb-1">Patient Dashboard</h1>
+                <p class="text-muted mb-0">Track your glucose readings, monitor health anomalies, and view calculated predictions.</p>
+            </div>
+        </div>
+
+        {% if diagnosis_summary %}
+            <div class="alert alert-custom border-0 shadow-sm d-flex align-items-start p-3 mb-4" style="background-color: #eff6ff; border-left: 4px solid #2563eb !important; border-radius: 12px;">
+                <i class="bi bi-info-circle-fill text-primary fs-4 me-3 mt-0.5"></i>
+                <div>
+                    <div class="text-primary-emphasis fw-bold">Diabetes Screening Status</div>
+                    <div class="text-dark my-1">
+                        <span class="badge bg-primary px-2 py-1.5 rounded">{{ diagnosis_summary.get_status_display }}</span> 
+                        <span class="text-muted ms-1">({{ diagnosis_summary.get_confirmation_status_display }})</span>
+                    </div>
+                    {% if diagnosis_summary.reason %}
+                        <div class="small text-muted border-top pt-1 mt-1">{{ diagnosis_summary.reason }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="row g-4">
+            <div class="col-xl-4 col-lg-5">
+                <div class="card custom-card h-100 p-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+                        <i class="bi bi-heart-pulse text-danger"></i> Health Metrics Summary
+                    </h5>
+                    
+                    <div class="d-flex flex-column gap-3">
+                        <div class="metric-box primary shadow-sm">
+                            <div class="small text-white-50 text-uppercase fw-semibold tracking-wider">Avg Glucose (7 Days)</div>
+                            <div class="d-flex align-items-baseline gap-1 my-1">
+                                <span class="fs-2 fw-bold tracking-tight">{{ avg_glucose }}</span>
+                                <span class="small text-white-50">mg/dL</span>
+                            </div>
+                            <i class="bi bi-droplet-fill position-absolute end-0 bottom-0 mb-n2 me-n1 text-white opacity-10 fs-1"></i>
+                        </div>
+
+                        <div class="metric-box safe shadow-sm">
+                            <div class="small text-white-50 text-uppercase fw-semibold tracking-wider">Readings in Safe Zone</div>
+                            <div class="fs-2 fw-bold my-1 tracking-tight">{{ safe_percentage }}%</div>
+                            <i class="bi bi-check-circle-fill position-absolute end-0 bottom-0 mb-n2 me-n1 text-white opacity-10 fs-1"></i>
+                        </div>
+
+                        <div class="metric-box anomalies shadow-sm">
+                            <div class="small text-white-50 text-uppercase fw-semibold tracking-wider">Anomalies Detected This Week</div>
+                            <div class="fs-2 fw-bold my-1 tracking-tight">{{ week_anomalies }}</div>
+                            <i class="bi bi-exclamation-triangle-fill position-absolute end-0 bottom-0 mb-n2 me-n1 text-white opacity-10 fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8 col-lg-7">
+                <div class="card custom-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+                        <i class="bi bi-plus-circle-fill text-primary"></i> Log a New Glucose Reading
+                    </h5>
+                    
+                    <form method="post" action="{% url 'patients:glucose_log_entry' %}" class="django-form-row row g-3">
+                        {% csrf_token %}
+                        <div class="col-md-4">
+                            {{ form.date.label_tag }}
+                            {{ form.date }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.time.label_tag }}
+                            {{ form.time }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.meal_context.label_tag }}
+                            {{ form.meal_context }}
+                        </div>
+                        <div class="col-12">
+                            {{ form.glucose_level.label_tag }}
+                            {{ form.glucose_level }}
+                        </div>
+                        <div class="col-12 mt-3 text-end">
+                            <button class="btn btn-primary px-4 py-2 fw-medium shadow-sm rounded-3" type="submit">
+                                <i class="bi bi-save me-1"></i> Save Metric Reading
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card custom-card p-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+                        <i class="bi bi-graph-up-arrow text-success"></i> Glucose Levels & Analytics Overview
+                    </h5>
+                    <div class="chart-container" style="position: relative; height:300px; width:100%;">
+                        <canvas id="glucoseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card custom-card p-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+                        <i class="bi bi-clock-history text-secondary"></i> Past Historical Records
+                    </h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover table-borderless align-middle mb-0">
+                            <thead class="table-light text-secondary small text-uppercase">
+                                <tr>
+                                    <th class="ps-3 py-3">Timestamp</th>
+                                    <th class="py-3">Level (mg/dL)</th>
+                                    <th class="py-3">Meal Context</th>
+                                    <th class="py-3">7-Day Avg</th>
+                                    <th class="py-3">Std Dev</th>
+                                    <th class="pe-3 py-3 text-end">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in cleaned_data %}
+                                    <tr class="{% if entry.anomaly %}anomaly-row{% endif %} border-bottom">
+                                        <td class="ps-3 py-3 fw-medium">{{ entry.timestamp|date:"Y-m-d H:i" }}</td>
+                                        <td class="py-3 fw-bold">{{ entry.glucose_level }}</td>
+                                        <td class="py-3"><span class="badge bg-light text-dark border px-2 py-1">{{ entry.meal_context }}</span></td>
+                                        <td class="py-3 text-muted">{{ entry.rolling_average|default:"-" }}</td>
+                                        <td class="py-3 text-muted">{{ entry.rolling_std|default:"-" }}</td>
+                                        <td class="pe-3 py-3 text-end">
+                                            {% if entry.anomaly %}
+                                                <span class="badge bg-danger text-uppercase px-2.5 py-1.5 rounded-pill"><i class="bi bi-exclamation-octagon me-1"></i> Anomaly</span>
+                                            {% else %}
+                                                <span class="badge bg-success-subtle text-success text-uppercase px-2.5 py-1.5 rounded-pill"><i class="bi bi-check-circle me-1"></i> Normal</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="bi bi-folder-x fs-2 d-block mb-2 text-black-50"></i>
+                                            No glucose metrics have been logged yet.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const cleaned = {{ cleaned_json|safe }} || [];
+        const preds = {{ predictions_json|safe }} || [];
+
+        function toLabel(iso) {
+            const d = new Date(iso);
+            const pad = (n)=>String(n).padStart(2,'0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        const labelSet = new Set();
+        cleaned.forEach(e=>labelSet.add(toLabel(e.timestamp)));
+        preds.forEach(p=>labelSet.add(toLabel(p.target_timestamp)));
+        const labels = Array.from(labelSet).sort((a,b)=>new Date(a)-new Date(b));
+        const actualMap = {}; cleaned.forEach(e=>actualMap[toLabel(e.timestamp)]=e.glucose_level);
+        const predMap = {}; preds.forEach(p=>predMap[toLabel(p.target_timestamp)]=p.predicted_value);
+        const actualData = labels.map(l=> actualMap.hasOwnProperty(l)?actualMap[l]:null);
+        const predData = labels.map(l=> predMap.hasOwnProperty(l)?predMap[l]:null);
+
+        const ctx = document.getElementById('glucoseChart').getContext('2d');
+        new Chart(ctx,{ 
+            type:'line', 
+            data:{ 
+                labels:labels, 
+                datasets:[ 
+                    { 
+                        label:'Actual Readings', 
+                        data:actualData, 
+                        borderColor:'#4f46e5', 
+                        backgroundColor:'rgba(79, 70, 229, 0.06)', 
+                        borderWidth:3, 
+                        pointRadius:3,
+                        pointHoverRadius:6,
+                        tension:0.35, 
+                        fill:true 
+                    }, 
+                    { 
+                        label:'Predicted Values', 
+                        data:predData, 
+                        borderColor:'#ea580c', 
+                        backgroundColor:'transparent', 
+                        borderWidth:2.5, 
+                        borderDash:[6,4], 
+                        pointRadius:3, 
+                        pointHoverRadius:6,
+                        tension:0.35, 
+                        fill:false 
+                    } 
+                ] 
+            }, 
+            options:{ 
+                responsive:true, 
+                maintainAspectRatio:false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, usePointStyle: true, font: { family: 'system-ui', size: 12 } }
+                    }
+                },
+                scales: {
+                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            } 
+        });
+    </script>
+{% endblock %}

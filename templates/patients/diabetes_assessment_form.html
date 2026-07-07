@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Diabetes Assessment{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .assessment-card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+        background-color: #ffffff;
+    }
+    .form-section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #475569;
+        margin-top: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    /* Quick CSS configuration step for raw Django form fields */
+    .form-control, .form-select, select, input[type="text"], input[type="number"], textarea {
+        display: block;
+        width: 100%;
+        padding: 0.475rem 0.75rem;
+        font-size: 0.95rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #334155;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .form-control:focus, .form-select:focus, select:focus, input:focus, textarea:focus {
+        border-color: #93c5fd;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.06);
+    }
+    .history-item {
+        border: 1px solid #f1f5f9 !important;
+        border-radius: 12px !important;
+        background-color: #ffffff;
+        margin-bottom: 0.75rem;
+        transition: border-color 0.2s ease;
+    }
+    .history-item:hover {
+        border-color: #cbd5e1 !important;
+    }
+    .sticky-sidebar {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} border-0 shadow-sm rounded-3 d-flex align-items-center gap-2" role="alert">
+          <i class="bi bi-info-circle-fill"></i>
+          <div>{{ message }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- Main Left-Hand Forms Configuration Panel -->
+    <div class="col-lg-7">
+      <div class="card assessment-card p-3 p-sm-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2.5 mb-2">
+            <div class="bg-primary-subtle text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="bi bi-heart-pulse-fill fs-5"></i>
+            </div>
+            <div>
+                <h1 class="h4 fw-bold text-gray-900 mb-0">Diabetes & Nutrition Assessment</h1>
+                <p class="text-muted small mb-0">Capture structured assessment data for diabetes status or risk review.</p>
+            </div>
+          </div>
+
+          <form method="post" class="row g-3 mt-2" autocomplete="off">
+            {% csrf_token %}
+
+            <!-- SECTION 1: TYPOLOGY -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-tag-fill me-1"></i> 1. Classification & Typology</div></div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_assessment_type">Assessment Type</label>
+              {{ form.assessment_type }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_diabetes_type">Diabetes Type</label>
+              {{ form.diabetes_type }}
+            </div>
+
+            <!-- SECTION 2: LAB METRICS -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-activity me-1"></i> 2. Glycemic & Laboratory Metrics</div></div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_fasting_glucose">Fasting Glucose</label>
+              {{ form.fasting_glucose }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_post_meal_glucose">Post-Meal Glucose</label>
+              {{ form.post_meal_glucose }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_hba1c">HbA1c</label>
+              {{ form.hba1c }}
+            </div>
+            <div class="col-12 my-2">
+              <div class="form-check form-switch pt-1">
+                {{ form.classic_hyperglycemia_symptoms }}
+                <label class="form-check-label small fw-semibold text-secondary ms-1" for="id_classic_hyperglycemia_symptoms">
+                  Classic Hyperglycemia Symptoms Present (Polyuria, Polydipsia, Polyphagia)
+                </label>
+              </div>
+            </div>
+
+            <!-- SECTION 3: MEDICATIONS -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-capsule me-1"></i> 3. Clinical Pharmacotherapy</div></div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_insulin_use">Insulin Use</label>
+              {{ form.insulin_use }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_oral_medication_use">Oral Medication Use</label>
+              {{ form.oral_medication_use }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_current_medications">Current Medications</label>
+              {{ form.current_medications }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_medication_timing">Medication Timing (Relative to Meals)</label>
+              {{ form.medication_timing }}
+            </div>
+
+            <!-- SECTION 4: BIOMETRICS -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-rulers me-1"></i> 4. Anthropometric Measurements</div></div>
+            <div class="col-sm-3 col-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_weight_kg">Weight (kg)</label>
+              {{ form.weight_kg }}
+            </div>
+            <div class="col-sm-3 col-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_height_cm">Height (cm)</label>
+              {{ form.height_cm }}
+            </div>
+            <div class="col-sm-3 col-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_bmi">BMI</label>
+              {{ form.bmi }}
+            </div>
+            <div class="col-sm-3 col-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_waist_circumference_cm">Waist Circ. (cm)</label>
+              {{ form.waist_circumference_cm }}
+            </div>
+
+            <!-- SECTION 5: MEDICAL HISTORY -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-journal-medical me-1"></i> 5. Pathological & Family History</div></div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_medical_history">General Medical History Remarks</label>
+              {{ form.medical_history }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_family_history_diabetes">Family Diabetes History</label>
+              {{ form.family_history_diabetes }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_high_bp_history">Hypertension History</label>
+              {{ form.high_bp_history }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_high_cholesterol_history">Hyperlipidemia History</label>
+              {{ form.high_cholesterol_history }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_gestational_diabetes_history">Gestational Diabetes History</label>
+              {{ form.gestational_diabetes_history }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_pcos_history">PCOS History Framework</label>
+              {{ form.pcos_history }}
+            </div>
+
+            <!-- SECTION 6: NUTRITION & ALLERGIES -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-egg-fried me-1"></i> 6. Dietetic Profile & Nutrition Assessment</div></div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_dietary_habits">Dietary Habits</label>
+              {{ form.dietary_habits }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_eating_habits">Eating Behavior Profiles</label>
+              {{ form.eating_habits }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_nutrition_assessment">Nutrition Diagnostic Assessment</label>
+              {{ form.nutrition_assessment }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_food_allergies_or_intolerance">Food Allergies / Intolerances</label>
+              {{ form.food_allergies_or_intolerance }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_food_affordability_and_preparation">Socioeconomic Food Affordability & Prep Ability</label>
+              {{ form.food_affordability_and_preparation }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_food_preference_and_culture">Cultural Food Preferences</label>
+              {{ form.food_preference_and_culture }}
+            </div>
+
+            <!-- SECTION 7: LIFESTYLE & SOCIAL -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-person-walking me-1"></i> 7. Lifestyle & Socio-Behavioral Elements</div></div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_physical_activity_level">Physical Activity Level</label>
+              {{ form.physical_activity_level }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_readiness_to_change">Readiness to Change</label>
+              {{ form.readiness_to_change }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary" for="id_assessed_at">Assessment Reference Date</label>
+              {{ form.assessed_at }}
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_lifestyle_factors">General Lifestyle Comments</label>
+              {{ form.lifestyle_factors }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_sleep_quality">Sleep Quality Metrics</label>
+              {{ form.sleep_quality }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_stress_level">Psychosocial Stress Level</label>
+              {{ form.stress_level }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_alcohol_intake">Alcohol Intake Scale</label>
+              {{ form.alcohol_intake }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_smoking_status">Smoking Status Profile</label>
+              {{ form.smoking_status }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_work_schedule">Work Schedule / Shifts</label>
+              {{ form.work_schedule }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-secondary" for="id_occupation">Patient Occupation</label>
+              {{ form.occupation }}
+            </div>
+
+            <!-- SECTION 8: LAB SUMMARY -->
+            <div class="col-12"><div class="form-section-title"><i class="bi bi-file-earmark-medical me-1"></i> 8. Diagnostic Lab Summary Data</div></div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-secondary" for="id_laboratory_results_summary">Laboratory Results Summary (Lipid Profile, Renal Metrics, etc.)</label>
+              {{ form.laboratory_results_summary }}
+            </div>
+
+            <!-- SUBMIT BUTTON BLOCK -->
+            <div class="col-12 mt-4 pt-3 border-top border-light">
+              <button class="btn btn-primary px-4 py-2.5 fw-semibold shadow-sm rounded-3 d-inline-flex align-items-center gap-2" type="submit">
+                <i class="bi bi-check-circle"></i> Save Complete Assessment
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right-Hand Historical Dashboard Tracker -->
+    <div class="col-lg-5">
+      <div class="sticky-sidebar">
+        <div class="card assessment-card p-3 p-sm-4">
+          <div class="card-body p-1">
+            <h2 class="h5 fw-bold text-gray-900 mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-muted"></i> Recent Assessments
+            </h2>
+            
+            <div class="list-group list-group-flush shadow-none">
+              {% for assessment in assessments %}
+                <div class="list-group-item history-item p-3">
+                  <div class="d-flex justify-content-between align-items-start gap-2 mb-1.5">
+                    <div class="fw-bold text-dark fs-6">{{ assessment.get_assessment_type_display }}</div>
+                    <span class="badge bg-light text-secondary border px-2 py-1 rounded text-xs d-flex align-items-center gap-1">
+                        <i class="bi bi-calendar"></i> {{ assessment.assessed_at|date:"Y-m-d H:i" }}
+                    </span>
+                  </div>
+                  
+                  {% if assessment.diabetes_type %}
+                    <div class="small text-secondary fw-medium mb-2">
+                        <i class="bi bi-bookmark text-primary"></i> {{ assessment.get_diabetes_type_display }}
+                    </div>
+                  {% endif %}
+                  
+                  <div class="d-flex flex-wrap gap-1.5 my-2">
+                    {% if assessment.fasting_glucose %}
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded">Fasting: {{ assessment.fasting_glucose }}</span>
+                    {% endif %}
+                    {% if assessment.post_meal_glucose %}
+                      <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 rounded">Post-Meal: {{ assessment.post_meal_glucose }}</span>
+                    {% endif %}
+                    {% if assessment.hba1c %}
+                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded">HbA1c: {{ assessment.hba1c }}</span>
+                    {% endif %}
+                  </div>
+                  
+                  {% if assessment.classic_hyperglycemia_symptoms is not None %}
+                    <div class="small text-muted mt-2 d-flex align-items-center gap-1">
+                      <i class="bi bi-heart-arrow text-danger"></i> 
+                      <span>Classic Symptoms: <strong>{% if assessment.classic_hyperglycemia_symptoms %}Present{% else %}Absent{% endif %}</strong></span>
+                    </div>
+                  {% endif %}
+                </div>
+              {% empty %}
+                <div class="text-center py-5 text-muted bg-light rounded-3 border border-dashed">
+                  <i class="bi bi-folder-x fs-2 d-block mb-2 opacity-50"></i>
+                  <span class="small">No diagnostic assessment entries registered yet.</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Standard map pairing field IDs to informative helper suggestions and clinical units
+    const customSuggestions = {
+        'id_fasting_glucose': 'e.g., 5.4 mmol/L or 98 mg/dL',
+        'id_post_meal_glucose': 'e.g., 7.2 mmol/L or 130 mg/dL',
+        'id_hba1c': 'e.g., 6.1%',
+        'id_weight_kg': 'e.g., 74.5',
+        'id_height_cm': 'e.g., 175',
+        'id_bmi': 'Calculated index value (e.g., 24.3)',
+        'id_waist_circumference_cm': 'e.g., 88',
+        'id_current_medications': 'List active doses (e.g., Metformin 500mg BID, Lisinopril 10mg QD)',
+        'id_medication_timing': 'e.g., 30 minutes before breakfast, with evening meals',
+        'id_medical_history': 'Note significant conditions, prior surgeries, or chronic trends',
+        'id_dietary_habits': 'e.g., High-carbohydrate intake, low fiber, 3 meals daily with regular snacking',
+        'id_eating_habits': 'e.g., Rapid eating, emotional eating, frequent late-night meals',
+        'id_nutrition_assessment': 'Summarize caloric adjustments, macro breakdown, or clinical nutritional deficits',
+        'id_food_allergies_or_intolerance': 'e.g., Lactose intolerance, gluten sensitivity, none',
+        'id_food_affordability_and_preparation': 'Detail financial barriers, access limitations, or self-cooking setup',
+        'id_food_preference_and_culture': 'Note cultural staples, strict vegetarian preferences, religious limits',
+        'id_lifestyle_factors': 'Relevant daily patterns, screen-time habits, or systemic constraints',
+        'id_laboratory_results_summary': 'e.g., TC: 4.2, TG: 1.5, HDL: 1.1, LDL: 2.4 | Cr: 85, eGFR: >90'
+    };
+
+    // Safely apply placeholders and boost raw checkbox visuals to standard Bootstrap switch styling
+    for (const [fieldId, textSuggestion] of Object.entries(customSuggestions)) {
+        const inputElement = document.getElementById(fieldId);
+        if (inputElement) {
+            inputElement.setAttribute('placeholder', textSuggestion);
+        }
+    }
+
+    const checkElement = document.getElementById('id_classic_hyperglycemia_symptoms');
+    if (checkElement) {
+        checkElement.classList.add('form-check-input');
+    }
+});
+</script>
+{% endblock %}
