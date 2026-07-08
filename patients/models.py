@@ -111,8 +111,20 @@ class Comment(models.Model):
 
 
 class UserProfile(models.Model):
+    ROLE_PATIENT = 'patient'
+    ROLE_PHYSICIAN = 'physician'
+    ROLE_DIETICIAN = 'dietician'
+    ROLE_RESEARCHER = 'researcher'
+    ROLE_CHOICES = [
+        (ROLE_PATIENT, 'Patient'),
+        (ROLE_PHYSICIAN, 'Physician'),
+        (ROLE_DIETICIAN, 'Dietician'),
+        (ROLE_RESEARCHER, 'Researcher'),
+    ]
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     patient = models.OneToOneField(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name='user_profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_PATIENT)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):

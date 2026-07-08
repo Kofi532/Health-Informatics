@@ -43,6 +43,20 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="id_role" class="form-label fw-semibold small text-secondary">
+                                Sign up as
+                            </label>
+                            <select name="role" id="id_role" class="form-select" required>
+                                {% for value, label in form.role.field.choices %}
+                                    <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.role.errors %}
+                                <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
                             <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold small text-secondary">
                                 Password
                             </label>

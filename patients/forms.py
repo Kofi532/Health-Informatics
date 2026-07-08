@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import datetime
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import GlucoseLog, MedicationLog, Prescription, LabResult, DiabetesAssessment
+from .models import GlucoseLog, MedicationLog, Prescription, LabResult, DiabetesAssessment, UserProfile
 from django.forms import inlineformset_factory, modelformset_factory
 
 
@@ -179,6 +179,14 @@ class DiabetesAssessmentForm(forms.ModelForm):
 
 
 class SignUpForm(UserCreationForm):
+    role = forms.ChoiceField(
+        required=True,
+        choices=UserProfile.ROLE_CHOICES,
+        initial=UserProfile.ROLE_PATIENT,
+        label='Sign up as',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
     agree_to_terms = forms.BooleanField(
         required=True,
         label='I agree to the Terms of Use and Privacy Notice',

@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import SignUpForm
 from django.contrib.auth import login
+from django.contrib.auth.models import Group
 from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta
@@ -349,10 +350,36 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
-            UserProfile.objects.get_or_create(user=user)
-            PatientProfile.objects.get_or_create(user=user, defaults={'gestational_age_weeks': 0})
+            selected_role = form.cleaned_data.get('role', UserProfile.ROLE_PATIENT)
+
+            user_profile, _ = UserProfile.objects.get_or_create(user=user)
+            user_profile.role = selected_role
+            user_profile.save(update_fields=['role'])
+
+            role_to_group = {
+                UserProfile.ROLE_PATIENT: 'Patient',
+                UserProfile.ROLE_PHYSICIAN: 'Clinician',
+                UserProfile.ROLE_DIETICIAN: 'Dietician',
+                UserProfile.ROLE_RESEARCHER: 'Biostatistician',
+            }
+            group_name = role_to_group.get(selected_role)
+            if group_name:
+                group, _ = Group.objects.get_or_create(name=group_name)
+                user.groups.clear()
+                user.groups.add(group)
+
+            if selected_role == UserProfile.ROLE_PATIENT:
+                PatientProfile.objects.get_or_create(user=user, defaults={'gestational_age_weeks': 0})
+
             login(request, user)
-            return redirect('patients:patient_dashboard')
+
+            role_landing = {
+                UserProfile.ROLE_PATIENT: 'patients:patient_dashboard',
+                UserProfile.ROLE_PHYSICIAN: 'patients:doctor_dashboard',
+                UserProfile.ROLE_DIETICIAN: 'patients:blog_list',
+                UserProfile.ROLE_RESEARCHER: 'patients:researcher_patient_list',
+            }
+            return redirect(role_landing.get(selected_role, 'patients:patient_dashboard'))
     else:
         form = SignUpForm()
     return render(request, 'registration/signup.html', {'form': form})
