@@ -1,12 +1,14 @@
 from datetime import timedelta
 from django.utils import timezone
 from .models import GlucoseLog, GlucosePrediction, PatientProfile
+from .utils import calculate_linear_regression
 
 
 def generate_and_save_prediction(profile, horizon_hours=12):
     """Generate a point prediction for the next time window and save it.
 
-    Attempts to use statsmodels AutoReg; falls back to simple moving average.
+    Uses a simple linear trend when enough data exists; otherwise falls back to
+    a moving average.
     Args:
         profile: PatientProfile instance
         horizon_hours: how many hours ahead to predict (used to set predicted_for)
@@ -20,23 +22,25 @@ def generate_and_save_prediction(profile, horizon_hours=12):
 
     # prepare time series arrays
     timestamps = [ts for _, ts in values]
-    levels = [float(v) for v, _ in values] if False else [float(v) for v, _ in [(v, t) for v, t in values]]
+    levels = [float(value) for value, _ in values]
 
     predicted_for = timezone.now() + timedelta(hours=horizon_hours)
 
-    # try using statsmodels AutoReg
-    try:
-        import numpy as np
-        from statsmodels.tsa.ar_model import AutoReg
-        arr = np.array(levels, dtype=float)
-        if len(arr) >= 5:
-            model = AutoReg(arr, lags=3, old_names=False).fit()
-            pred = model.predict(start=len(arr), end=len(arr))[0]
-            used_model = 'auto_reg'
-        else:
-            pred = float(arr.mean())
-            used_model = 'moving_average'
-    except Exception:
+    if len(levels) >= 2:
+        first_ts = timestamps[0]
+        hour_offsets = [
+            (timestamp - first_ts).total_seconds() / 3600.0
+            for timestamp in timestamps
+        ]
+        slope, intercept = calculate_linear_regression(hour_offsets, levels)
+    else:
+        slope, intercept = None, None
+
+    if slope is not None and intercept is not None:
+        future_hours = hour_offsets[-1] + horizon_hours
+        pred = slope * future_hours + intercept
+        used_model = 'linear_trend'
+    else:
         # fallback: simple moving average of last 3 values
         recent = levels[-3:]
         pred = float(sum(recent) / len(recent))

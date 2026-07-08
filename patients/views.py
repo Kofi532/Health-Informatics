@@ -16,7 +16,7 @@ from openpyxl.styles import Font, PatternFill
 from .models import Patient, BlogPost, Comment, UserProfile, PatientProfile, GlucoseLog, DoctorAlert, MedicationLog, GlucosePrediction, Prescription, LabResult, DiabetesAssessment
 from django.db.models import Q
 from .forms import GlucoseLogForm, MedicationChecklistForm, PrescriptionForm, LabResultForm, DiabetesAssessmentForm
-from .utils import compute_patient_glucose_stats
+from .utils import calculate_linear_regression, compute_patient_glucose_stats, compute_population_stats
 from .diagnosis import recompute_patient_diagnosis
 import json
 
@@ -370,28 +370,11 @@ def glucose_log_entry(request):
             glucose_log.profile = profile
             glucose_log.save()
             # After saving, pull the last 7 days of readings and compute mean/std
-            try:
-                import numpy as np
-            except Exception:
-                np = None
-
             seven_days_ago = timezone.now() - timedelta(days=7)
             recent_qs = GlucoseLog.objects.filter(profile=profile, timestamp__gte=seven_days_ago)
             levels = list(recent_qs.values_list('glucose_level', flat=True))
 
-            mean = None
-            std = None
-            if levels:
-                if np is not None:
-                    arr = np.array(levels, dtype=float)
-                    mean = float(arr.mean())
-                    std = float(arr.std(ddof=0))
-                else:
-                    # fallback to pure Python
-                    mean = float(sum(levels)) / len(levels)
-                    # population std
-                    var = sum((x - mean) ** 2 for x in levels) / len(levels)
-                    std = float(var ** 0.5)
+            mean, std = compute_population_stats(levels)
 
             # Determine if new reading is a spike
             is_spike = False
@@ -448,32 +431,25 @@ def patient_dashboard(request):
 
     # Fetch all glucose logs and project next 3 timepoints
     try:
-        import pandas as pd
-        import numpy as np
-        from scipy import stats as scipy_stats
-        
         logs_qs = GlucoseLog.objects.filter(profile=profile).order_by('timestamp')
         logs_data = list(logs_qs.values('timestamp', 'glucose_level'))
-        
+
         if logs_data and len(logs_data) >= 2:
-            df = pd.DataFrame(logs_data)
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df = df.sort_values('timestamp')
-            
-            # Convert timestamps to numeric (hours since first reading) for regression
-            first_ts = df['timestamp'].iloc[0]
-            df['hours_since_first'] = (df['timestamp'] - first_ts).dt.total_seconds() / 3600.0
-            
-            X = df['hours_since_first'].values.reshape(-1, 1)
-            y = df['glucose_level'].values
-            
-            # Simple linear regression for trend
-            slope, intercept, _, _, _ = scipy_stats.linregress(X.flatten(), y)
-            
+            first_ts = logs_data[0]['timestamp']
+            hour_offsets = [
+                (entry['timestamp'] - first_ts).total_seconds() / 3600.0
+                for entry in logs_data
+            ]
+            glucose_values = [float(entry['glucose_level']) for entry in logs_data]
+            slope, intercept = calculate_linear_regression(hour_offsets, glucose_values)
+
+            if slope is None or intercept is None:
+                raise ValueError('Unable to calculate glucose trend')
+
             # Project next 3 timepoints (assuming regular 4-hour intervals for future readings)
-            last_ts = df['timestamp'].iloc[-1]
-            last_hours = df['hours_since_first'].iloc[-1]
-            
+            last_ts = logs_data[-1]['timestamp']
+            last_hours = hour_offsets[-1]
+
             for i in range(1, 4):
                 future_hours = last_hours + (i * 4)  # assume 4-hour interval
                 projected_value = int(round(slope * future_hours + intercept))
