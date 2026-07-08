@@ -244,6 +244,7 @@ def researcher_patient_detail(request, pk):
 
 @login_required
 def blog_list(request):
+    physician_user = is_physician_user(request.user)
     category_choices = list(BlogPost.CATEGORY_CHOICES)
     valid_categories = {value for value, _label in category_choices}
     category_labels = dict(category_choices)
@@ -251,7 +252,15 @@ def blog_list(request):
     if active_category not in valid_categories:
         active_category = BlogPost.CATEGORY_GENERAL
 
+    if physician_user:
+        # Physicians use the dedicated physician chat stream only.
+        active_category = BlogPost.CATEGORY_PHYSICIAN
+
     if request.method == 'POST':
+        if physician_user:
+            messages.error(request, 'Physicians can comment on patient posts but cannot create new blog posts.')
+            return redirect(f"{request.path}?category={active_category}")
+
         feeling_text = request.POST.get('feeling', '').strip()
         category = request.POST.get('category', active_category)
         if category not in valid_categories:
@@ -275,11 +284,32 @@ def blog_list(request):
                 published_at=timezone.now(),
             )
             return redirect(f"{request.path}?category={category}")
+
     posts = BlogPost.objects.filter(published=True, category=active_category)
+    approved_patients = []
+    physician_dialogues = []
+
+    if physician_user:
+        approved_patients = list(get_patients_approved_for_physician(request.user))
+        posts = posts.filter(patient__in=approved_patients)
+
+        for patient in approved_patients:
+            owner_profile = UserProfile.objects.filter(patient=patient).select_related('user').first()
+            patient_username = owner_profile.user.username if owner_profile is not None else 'unknown'
+            latest_post = posts.filter(patient=patient).order_by('-published_at').first()
+            physician_dialogues.append({
+                'patient': patient,
+                'patient_username': patient_username,
+                'latest_post': latest_post,
+            })
+
     return render(request, 'patients/blog_list.html', {
         'posts': posts,
         'active_category': active_category,
         'active_category_label': category_labels[active_category],
+        'physician_user': physician_user,
+        'physician_dialogues': physician_dialogues,
+        'approved_patients': approved_patients,
         'blog_categories': [
             {'value': value, 'label': label}
             for value, label in category_choices
@@ -290,10 +320,19 @@ def blog_list(request):
 @login_required
 def blog_detail(request, pk):
     post = get_object_or_404(BlogPost, pk=pk, published=True)
+    physician_user = is_physician_user(request.user)
     valid_categories = {value for value, _label in BlogPost.CATEGORY_CHOICES}
     category = request.GET.get('category', post.category)
     if category not in valid_categories:
         category = post.category
+
+    if physician_user:
+        if post.category != BlogPost.CATEGORY_PHYSICIAN:
+            return HttpResponseForbidden('Physicians can only access Chat with a Physician posts.')
+
+        approved_patients = get_patients_approved_for_physician(request.user)
+        if not approved_patients.filter(pk=getattr(post.patient, 'pk', None)).exists():
+            return HttpResponseForbidden('You can only access chats for your approved patients.')
 
     physician_only_comments = post.category == BlogPost.CATEGORY_PHYSICIAN
     can_comment = request.user.is_authenticated
