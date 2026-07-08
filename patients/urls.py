@@ -17,6 +17,7 @@ urlpatterns = [
     path('assessment/', views.diabetes_assessment_entry, name='diabetes_assessment_entry'),
     path('glucose-log/', views.glucose_log_entry, name='glucose_log_entry'),
     path('dashboard/', views.patient_dashboard, name='patient_dashboard'),
+    path('dashboard/approved-physicians/', views.update_approved_physicians, name='update_approved_physicians'),
     path('export/deidentified/', views.export_deidentified_csv, name='export_deidentified_csv'),
     path('doctor/', views.doctor_dashboard, name='doctor_dashboard'),
     path('medication/<int:medication_id>/toggle/', views.update_medication_status, name='update_medication_status'),

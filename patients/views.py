@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import SignUpForm
 from django.contrib.auth import login
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta
@@ -43,6 +43,27 @@ def is_physician_user(user):
         return True
 
     return user.groups.filter(name='Clinician').exists()
+
+
+def get_physician_users_queryset():
+    return User.objects.filter(
+        Q(userprofile__role=UserProfile.ROLE_PHYSICIAN) | Q(groups__name='Clinician')
+    ).distinct().order_by('username')
+
+
+def get_post_owner_approved_physician_ids(post):
+    if post.patient is None:
+        return set()
+
+    owner_profile = UserProfile.objects.filter(patient=post.patient).select_related('user').first()
+    if owner_profile is None:
+        return set()
+
+    patient_profile = PatientProfile.objects.filter(user=owner_profile.user).first()
+    if patient_profile is None:
+        return set()
+
+    return set(patient_profile.approved_physicians.values_list('id', flat=True))
 
 
 def get_patient_for_user(user):
@@ -248,9 +269,15 @@ def blog_detail(request, pk):
     can_comment = request.user.is_authenticated
     comment_restriction_message = ''
 
-    if physician_only_comments and not is_physician_user(request.user):
-        can_comment = False
-        comment_restriction_message = 'Only physicians can comment in the Chat with a Physician area.'
+    if physician_only_comments:
+        if not is_physician_user(request.user):
+            can_comment = False
+            comment_restriction_message = 'Only physicians can comment in the Chat with a Physician area.'
+        else:
+            approved_ids = get_post_owner_approved_physician_ids(post)
+            if request.user.id not in approved_ids:
+                can_comment = False
+                comment_restriction_message = 'Only physicians approved by this patient can comment in the Chat with a Physician area.'
 
     if request.method == 'POST':
         if not can_comment:
@@ -479,6 +506,8 @@ def patient_dashboard(request):
     form = GlucoseLogForm()
     # ensure profile exists
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
+    physician_users = list(get_physician_users_queryset())
+    approved_physician_ids = set(profile.approved_physicians.values_list('id', flat=True))
     patient = get_patient_for_user(request.user)
     diagnosis_summary = None
     if patient is not None:
@@ -573,7 +602,32 @@ def patient_dashboard(request):
         'week_anomalies': week_anomalies,
         'today_medications': today_medications,
         'diagnosis_summary': diagnosis_summary,
+        'physician_users': physician_users,
+        'approved_physician_ids': approved_physician_ids,
     })
+
+
+@login_required
+def update_approved_physicians(request):
+    if request.method != 'POST':
+        return redirect('patients:patient_dashboard')
+
+    profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
+    valid_physician_ids = set(get_physician_users_queryset().values_list('id', flat=True))
+    submitted_ids = request.POST.getlist('approved_physicians')
+
+    selected_ids = []
+    for raw_id in submitted_ids:
+        try:
+            user_id = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+        if user_id in valid_physician_ids:
+            selected_ids.append(user_id)
+
+    profile.approved_physicians.set(selected_ids)
+    messages.success(request, 'Approved physicians updated successfully.')
+    return redirect('patients:patient_dashboard')
 
 
 @login_required

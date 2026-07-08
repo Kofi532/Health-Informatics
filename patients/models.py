@@ -136,6 +136,12 @@ class PatientProfile(models.Model):
     gestational_age_weeks = models.PositiveIntegerField()
     target_fasting_glucose = models.PositiveIntegerField(default=95)
     doctor_email = models.EmailField(blank=True, null=True, help_text='Email address of assigned doctor for critical alerts')
+    approved_physicians = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='approved_patient_profiles',
+        help_text='Physicians approved by this patient to engage in physician chat posts.'
+    )
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
