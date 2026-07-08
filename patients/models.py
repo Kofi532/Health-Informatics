@@ -146,6 +146,16 @@ class PatientProfile(models.Model):
         related_name='approved_patient_profiles',
         help_text='Physicians approved by this patient to engage in physician chat posts.'
     )
+    allow_all_dieticians = models.BooleanField(
+        default=False,
+        help_text='If enabled, any dietician/nutritionist can comment in this patient\'s dietician chat posts.'
+    )
+    approved_dieticians = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='approved_dietician_patient_profiles',
+        help_text='Dieticians/nutritionists approved by this patient to engage in dietician chat posts.'
+    )
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -275,6 +285,13 @@ class MedicationLog(models.Model):
 
 class Prescription(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='prescriptions')
+    prescribed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='issued_prescriptions'
+    )
     title = models.CharField(max_length=200)
     content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
@@ -288,7 +305,8 @@ class Prescription(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.patient} - {self.title}"
+        prescriber = self.prescribed_by.username if self.prescribed_by else 'Unknown specialist'
+        return f"{self.patient} - {self.title} ({prescriber})"
 
 
 class LabResult(models.Model):

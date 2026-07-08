@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import BlogPost, Comment, Patient, UserProfile, PatientProfile, GlucoseLog, LabResult, DiabetesAssessment, DiabetesDiagnosisSummary
-from .views import get_patient_for_user
+from .models import BlogPost, Comment, Patient, UserProfile, PatientProfile, GlucoseLog, Prescription, LabResult, DiabetesAssessment, DiabetesDiagnosisSummary
+from .views import get_blog_category_filter_values, get_patient_for_user
 
 
 class BlogResearchDataTests(TestCase):
@@ -238,3 +238,83 @@ class BlogResearchDataTests(TestCase):
         user = get_user_model().objects.get(username='newpatient')
         self.assertTrue(PatientProfile.objects.filter(user=user).exists())
         self.assertEqual(response.url, reverse('patients:patient_dashboard'))
+
+    def test_patient_cannot_add_prescriptions(self):
+        Prescription.objects.create(
+            patient=self.patient,
+            title='Metformin 500mg',
+            content='Take twice daily with meals.',
+        )
+
+        self.client.force_login(self.user)
+
+        create_attempt = self.client.post(reverse('patients:prescription_entry'), {
+            'title': 'Insulin order',
+            'content': 'Test entry',
+        })
+
+        self.assertEqual(create_attempt.status_code, 302)
+        self.assertEqual(Prescription.objects.filter(patient=self.patient, title='Insulin order').count(), 0)
+
+    def test_approved_dietician_can_add_prescription(self):
+        dietician_user = get_user_model().objects.create_user(username='dietician_rx', password='secret123')
+        UserProfile.objects.create(user=dietician_user, role=UserProfile.ROLE_DIETICIAN)
+
+        patient_profile, _ = PatientProfile.objects.get_or_create(user=self.user, defaults={'gestational_age_weeks': 0})
+        patient_profile.approved_dieticians.add(dietician_user)
+
+        self.client.force_login(dietician_user)
+
+        response = self.client.post(reverse('patients:prescription_entry'), {
+            'patient_id': str(self.patient.id),
+            'title': 'Dietician Nutrition Plan',
+            'content': 'Follow low-glycemic meal plan and monitor portions.',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Prescription.objects.filter(patient=self.patient, title='Dietician Nutrition Plan').exists())
+        prescription = Prescription.objects.get(patient=self.patient, title='Dietician Nutrition Plan')
+        self.assertEqual(prescription.prescribed_by, dietician_user)
+
+    def test_dietician_stream_includes_legacy_nutritionist_category_alias(self):
+        category_values = get_blog_category_filter_values(BlogPost.CATEGORY_DIETICIAN)
+
+        self.assertIn(BlogPost.CATEGORY_DIETICIAN, category_values)
+        self.assertIn(BlogPost.CATEGORY_NUTRITIONNIST, category_values)
+
+    def test_patient_can_update_approved_dieticians(self):
+        dietician_user = get_user_model().objects.create_user(username='dietician_user', password='secret123')
+        UserProfile.objects.create(user=dietician_user, role=UserProfile.ROLE_DIETICIAN)
+        PatientProfile.objects.get_or_create(user=self.user, defaults={'gestational_age_weeks': 0})
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse('patients:update_approved_dieticians'), {
+            'action': 'add',
+            'approved_dietician': str(dietician_user.id),
+        })
+
+        self.assertEqual(response.status_code, 302)
+        profile = PatientProfile.objects.get(user=self.user)
+        self.assertTrue(profile.approved_dieticians.filter(id=dietician_user.id).exists())
+
+    def test_unapproved_dietician_cannot_comment_in_dietician_chat(self):
+        dietician_user = get_user_model().objects.create_user(username='dietician1', password='secret123')
+        UserProfile.objects.create(user=dietician_user, role=UserProfile.ROLE_DIETICIAN)
+
+        post = BlogPost.objects.create(
+            patient=self.patient,
+            category=BlogPost.CATEGORY_DIETICIAN,
+            title='Dietician support needed',
+            slug='dietician-support-needed',
+            body='Need nutrition guidance.',
+            published=True,
+        )
+
+        self.client.force_login(dietician_user)
+        response = self.client.post(
+            reverse('patients:blog_detail', args=[post.pk]),
+            {'content': 'Please try a lower-carb meal plan.'},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Comment.objects.filter(post=post, content='Please try a lower-carb meal plan.').exists())

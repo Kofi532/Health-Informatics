@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from .forms import SignUpForm
 from django.contrib.auth import login
 from django.contrib.auth.models import Group, User
@@ -9,6 +10,7 @@ from datetime import timedelta, datetime
 from django.utils.text import slugify
 from django.http import HttpResponse, HttpResponseForbidden
 from django.conf import settings
+from django.urls import reverse
 import csv
 import hashlib, hmac
 from openpyxl import Workbook
@@ -34,6 +36,34 @@ def _export_cell(value):
     return value
 
 
+DIETICIAN_CATEGORY_VALUES = {
+    BlogPost.CATEGORY_DIETICIAN,
+    BlogPost.CATEGORY_NUTRITIONNIST,
+}
+
+
+def normalize_blog_category(category):
+    if category == BlogPost.CATEGORY_NUTRITIONNIST:
+        return BlogPost.CATEGORY_DIETICIAN
+    return category
+
+
+def get_blog_category_filter_values(category):
+    normalized = normalize_blog_category(category)
+    if normalized == BlogPost.CATEGORY_DIETICIAN:
+        return DIETICIAN_CATEGORY_VALUES
+    return {normalized}
+
+
+def get_blog_category_choices():
+    return [
+        (BlogPost.CATEGORY_GENERAL, 'General Blog'),
+        (BlogPost.CATEGORY_DIETICIAN, 'Chat with a Dietician/Nutritionist'),
+        (BlogPost.CATEGORY_PHARMACIST, 'Chat with a Pharmacist'),
+        (BlogPost.CATEGORY_PHYSICIAN, 'Chat with a Physician'),
+    ]
+
+
 def is_physician_user(user):
     if not getattr(user, 'is_authenticated', False):
         return False
@@ -45,47 +75,146 @@ def is_physician_user(user):
     return user.groups.filter(name='Clinician').exists()
 
 
+def is_dietician_user(user):
+    if not getattr(user, 'is_authenticated', False):
+        return False
+
+    profile = UserProfile.objects.filter(user=user).only('role').first()
+    if profile is not None and profile.role == UserProfile.ROLE_DIETICIAN:
+        return True
+
+    return user.groups.filter(name__in=['Dietician', 'Nutritionist']).exists()
+
+
+def get_user_role(user):
+    if not getattr(user, 'is_authenticated', False):
+        return None
+
+    profile = UserProfile.objects.filter(user=user).only('role').first()
+    if profile is not None and profile.role:
+        return profile.role
+
+    if user.groups.filter(name='Clinician').exists():
+        return UserProfile.ROLE_PHYSICIAN
+    if user.groups.filter(name__in=['Dietician', 'Nutritionist']).exists():
+        return UserProfile.ROLE_DIETICIAN
+    if user.groups.filter(name='Biostatistician').exists():
+        return UserProfile.ROLE_RESEARCHER
+    return UserProfile.ROLE_PATIENT
+
+
+def is_patient_user(user):
+    return get_user_role(user) == UserProfile.ROLE_PATIENT
+
+
+def get_role_landing_url_name(user):
+    role = get_user_role(user)
+    role_landing = {
+        UserProfile.ROLE_PATIENT: 'patients:patient_dashboard',
+        UserProfile.ROLE_PHYSICIAN: 'patients:blog_list',
+        UserProfile.ROLE_DIETICIAN: 'patients:blog_list',
+        UserProfile.ROLE_RESEARCHER: 'patients:researcher_patient_list',
+    }
+    return role_landing.get(role, 'patients:patient_dashboard')
+
+
+def redirect_to_role_landing(user):
+    return redirect(get_role_landing_url_name(user))
+
+
+def require_patient_user(request):
+    if is_patient_user(request.user):
+        return None
+
+    messages.error(request, 'This page is for patient data entry and monitoring only.')
+    return redirect_to_role_landing(request.user)
+
+
+class RoleBasedLoginView(LoginView):
+    template_name = 'registration/login.html'
+
+    def get_success_url(self):
+        return reverse(get_role_landing_url_name(self.request.user))
+
+
 def get_physician_users_queryset():
     return User.objects.filter(
         Q(userprofile__role=UserProfile.ROLE_PHYSICIAN) | Q(groups__name='Clinician')
     ).distinct().order_by('username')
 
 
-def get_patients_approved_for_physician(user):
+def get_dietician_users_queryset():
+    return User.objects.filter(
+        Q(userprofile__role=UserProfile.ROLE_DIETICIAN)
+        | Q(groups__name='Dietician')
+        | Q(groups__name='Nutritionist')
+    ).distinct().order_by('username')
+
+
+def get_patients_approved_for_specialist(user, *, allow_all_field, approved_field):
     return Patient.objects.filter(
-        Q(user_profile__user__patient_profile__allow_all_physicians=True)
-        | Q(user_profile__user__patient_profile__approved_physicians=user)
+        Q(**{f'user_profile__user__patient_profile__{allow_all_field}': True})
+        | Q(**{f'user_profile__user__patient_profile__{approved_field}': user})
     ).distinct().order_by('last_name', 'first_name')
 
 
-def get_post_owner_approved_physician_ids(post):
+def get_patients_approved_for_physician(user):
+    return get_patients_approved_for_specialist(
+        user,
+        allow_all_field='allow_all_physicians',
+        approved_field='approved_physicians',
+    )
+
+
+def get_patients_approved_for_dietician(user):
+    return get_patients_approved_for_specialist(
+        user,
+        allow_all_field='allow_all_dieticians',
+        approved_field='approved_dieticians',
+    )
+
+
+def _get_post_owner_profile(post):
     if post.patient is None:
-        return set()
+        return None
 
     owner_profile = UserProfile.objects.filter(patient=post.patient).select_related('user').first()
     if owner_profile is None:
-        return set()
+        return None
 
-    patient_profile = PatientProfile.objects.filter(user=owner_profile.user).first()
+    return PatientProfile.objects.filter(user=owner_profile.user).first()
+
+
+def get_post_owner_approved_specialist_ids(post, *, approved_field):
+    patient_profile = _get_post_owner_profile(post)
     if patient_profile is None:
         return set()
 
-    return set(patient_profile.approved_physicians.values_list('id', flat=True))
+    return set(getattr(patient_profile, approved_field).values_list('id', flat=True))
+
+
+def get_post_owner_approved_physician_ids(post):
+    return get_post_owner_approved_specialist_ids(post, approved_field='approved_physicians')
+
+
+def get_post_owner_approved_dietician_ids(post):
+    return get_post_owner_approved_specialist_ids(post, approved_field='approved_dieticians')
+
+
+def post_owner_allows_all_specialists(post, *, allow_all_field):
+    patient_profile = _get_post_owner_profile(post)
+    if patient_profile is None:
+        return False
+
+    return bool(getattr(patient_profile, allow_all_field))
 
 
 def post_owner_allows_all_physicians(post):
-    if post.patient is None:
-        return False
+    return post_owner_allows_all_specialists(post, allow_all_field='allow_all_physicians')
 
-    owner_profile = UserProfile.objects.filter(patient=post.patient).select_related('user').first()
-    if owner_profile is None:
-        return False
 
-    patient_profile = PatientProfile.objects.filter(user=owner_profile.user).only('allow_all_physicians').first()
-    if patient_profile is None:
-        return False
-
-    return bool(patient_profile.allow_all_physicians)
+def post_owner_allows_all_dieticians(post):
+    return post_owner_allows_all_specialists(post, allow_all_field='allow_all_dieticians')
 
 
 def get_patient_for_user(user):
@@ -148,8 +277,14 @@ def patient_detail(request, pk):
 
 @login_required
 def researcher_patient_list(request):
-    if is_physician_user(request.user):
+    physician_user = is_physician_user(request.user)
+    dietician_user = is_dietician_user(request.user)
+    specialist_limited = physician_user or dietician_user
+
+    if physician_user:
         patients = get_patients_approved_for_physician(request.user)
+    elif dietician_user:
+        patients = get_patients_approved_for_dietician(request.user)
     else:
         patients = Patient.objects.all().order_by('last_name', 'first_name')
 
@@ -157,10 +292,10 @@ def researcher_patient_list(request):
     for patient in patients:
         blog_posts = list(patient.blog_posts.filter(published=True).order_by('-published_at')[:3])
         comments = list(patient.comments.select_related('post').order_by('-created_at')[:3])
-        prescriptions = list(patient.prescriptions.order_by('-created_at')[:3])
-        lab_results = list(patient.lab_results.order_by('-collected_at')[:3])
+        prescriptions = [] if specialist_limited else list(patient.prescriptions.order_by('-created_at')[:3])
+        lab_results = [] if specialist_limited else list(patient.lab_results.order_by('-collected_at')[:3])
         assessments = list(patient.diabetes_assessments.order_by('-assessed_at')[:2])
-        diagnosis_summary = getattr(patient, 'diagnosis_summary', None)
+        diagnosis_summary = None if specialist_limited else getattr(patient, 'diagnosis_summary', None)
         patient_content.append({
             'patient': patient,
             'blog_posts': blog_posts,
@@ -170,14 +305,25 @@ def researcher_patient_list(request):
             'assessments': assessments,
             'diagnosis_summary': diagnosis_summary,
         })
-    return render(request, 'patients/researcher_patient_list.html', {'patient_content': patient_content})
+    return render(request, 'patients/researcher_patient_list.html', {
+        'patient_content': patient_content,
+        'specialist_limited': specialist_limited,
+    })
 
 
 @login_required
 def researcher_patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
-    if is_physician_user(request.user):
+    physician_user = is_physician_user(request.user)
+    dietician_user = is_dietician_user(request.user)
+    specialist_limited = physician_user or dietician_user
+
+    if physician_user:
         allowed_patients = get_patients_approved_for_physician(request.user)
+        if not allowed_patients.filter(pk=patient.pk).exists():
+            return HttpResponseForbidden('You can only view research data for your approved patients.')
+    elif dietician_user:
+        allowed_patients = get_patients_approved_for_dietician(request.user)
         if not allowed_patients.filter(pk=patient.pk).exists():
             return HttpResponseForbidden('You can only view research data for your approved patients.')
 
@@ -198,11 +344,11 @@ def researcher_patient_detail(request, pk):
     prescriptions = []
     lab_results = []
     assessments = []
-    diagnosis_summary = getattr(patient, 'diagnosis_summary', None)
+    diagnosis_summary = None if specialist_limited else getattr(patient, 'diagnosis_summary', None)
 
     if user_profile is not None:
         patient_profile = getattr(user_profile.user, 'patient_profile', None)
-        if patient_profile is not None:
+        if patient_profile is not None and not specialist_limited:
             glucose_logs = list(patient_profile.glucose_logs.all()[:15])
             predictions = list(patient_profile.predictions.all()[:10])
             alerts = list(patient_profile.doctor_alerts.all()[:10])
@@ -210,13 +356,16 @@ def researcher_patient_detail(request, pk):
 
         blog_posts = list(BlogPost.objects.filter(patient=patient, published=True).order_by('-published_at')[:10])
         comments = list(Comment.objects.filter(patient=patient).select_related('post').order_by('-created_at')[:10])
-        prescriptions = list(Prescription.objects.filter(patient=patient).order_by('-created_at')[:10])
+        if not specialist_limited:
+            prescriptions = list(Prescription.objects.filter(patient=patient).order_by('-created_at')[:10])
 
-    lab_results = list(LabResult.objects.filter(patient=patient).order_by('-collected_at')[:10])
+    if not specialist_limited:
+        lab_results = list(LabResult.objects.filter(patient=patient).order_by('-collected_at')[:10])
     assessments = list(DiabetesAssessment.objects.filter(patient=patient).order_by('-assessed_at')[:10])
 
-    for encounter in patient.encounters.all():
-        vital_signs.extend(list(encounter.vital_signs.all()))
+    if not specialist_limited:
+        for encounter in patient.encounters.all():
+            vital_signs.extend(list(encounter.vital_signs.all()))
 
     recent_logs = [log for log in glucose_logs if log.timestamp >= timezone.now() - timedelta(days=7)]
     average_glucose = None
@@ -239,32 +388,41 @@ def researcher_patient_detail(request, pk):
         'lab_results': lab_results,
         'assessments': assessments,
         'diagnosis_summary': diagnosis_summary,
+        'specialist_limited': specialist_limited,
     })
 
 
 @login_required
 def blog_list(request):
     physician_user = is_physician_user(request.user)
+    dietician_user = is_dietician_user(request.user)
+    clinical_user = physician_user or dietician_user
     search_query = request.GET.get('q', '').strip()
     selected_patient_filter = request.GET.get('approved_patient', '').strip()
-    category_choices = list(BlogPost.CATEGORY_CHOICES)
+    category_choices = get_blog_category_choices()
     valid_categories = {value for value, _label in category_choices}
+    valid_categories.add(BlogPost.CATEGORY_NUTRITIONNIST)
     category_labels = dict(category_choices)
     active_category = request.GET.get('category', BlogPost.CATEGORY_GENERAL)
     if active_category not in valid_categories:
         active_category = BlogPost.CATEGORY_GENERAL
 
+    active_category = normalize_blog_category(active_category)
+
     if physician_user:
         # Physicians use the dedicated physician chat stream only.
         active_category = BlogPost.CATEGORY_PHYSICIAN
+    elif dietician_user:
+        # Dieticians/Nutritionists use the dedicated dietician chat stream only.
+        active_category = BlogPost.CATEGORY_DIETICIAN
 
     if request.method == 'POST':
-        if physician_user:
-            messages.error(request, 'Physicians can comment on patient posts but cannot create new blog posts.')
+        if clinical_user:
+            messages.error(request, 'Clinical specialists can comment on patient posts but cannot create new blog posts.')
             return redirect(f"{request.path}?category={active_category}")
 
         feeling_text = request.POST.get('feeling', '').strip()
-        category = request.POST.get('category', active_category)
+        category = normalize_blog_category(request.POST.get('category', active_category))
         if category not in valid_categories:
             category = BlogPost.CATEGORY_GENERAL
         if feeling_text:
@@ -287,12 +445,18 @@ def blog_list(request):
             )
             return redirect(f"{request.path}?category={category}")
 
-    posts = BlogPost.objects.filter(published=True, category=active_category)
+    posts = BlogPost.objects.filter(published=True, category__in=get_blog_category_filter_values(active_category))
     approved_patients = []
-    physician_dialogues = []
+    clinical_dialogues = []
+    clinical_role_label = ''
 
-    if physician_user:
-        approved_patients = list(get_patients_approved_for_physician(request.user))
+    if clinical_user:
+        if physician_user:
+            approved_patients = list(get_patients_approved_for_physician(request.user))
+            clinical_role_label = 'Physician'
+        else:
+            approved_patients = list(get_patients_approved_for_dietician(request.user))
+            clinical_role_label = 'Dietician/Nutritionist'
 
         if selected_patient_filter:
             try:
@@ -313,7 +477,7 @@ def blog_list(request):
             approved_patients = filtered_patients
 
         posts = posts.filter(patient__in=approved_patients)
-        physician_patient = get_patient_for_user(request.user)
+        specialist_patient = get_patient_for_user(request.user)
 
         for patient in approved_patients:
             owner_profile = UserProfile.objects.filter(patient=patient).select_related('user').first()
@@ -332,12 +496,12 @@ def blog_list(request):
                 last_message_at = latest_post.published_at
 
             unread_qs = Comment.objects.filter(post__in=patient_posts)
-            if physician_patient is not None:
-                unread_count = unread_qs.exclude(patient=physician_patient).count()
+            if specialist_patient is not None:
+                unread_count = unread_qs.exclude(patient=specialist_patient).count()
             else:
                 unread_count = unread_qs.count()
 
-            physician_dialogues.append({
+            clinical_dialogues.append({
                 'patient': patient,
                 'patient_username': patient_username,
                 'latest_post': latest_post,
@@ -346,7 +510,7 @@ def blog_list(request):
                 'unread_count': unread_count,
             })
 
-        physician_dialogues.sort(
+        clinical_dialogues.sort(
             key=lambda item: item['last_message_at'] or timezone.make_aware(datetime.min),
             reverse=True,
         )
@@ -355,8 +519,9 @@ def blog_list(request):
         'posts': posts,
         'active_category': active_category,
         'active_category_label': category_labels[active_category],
-        'physician_user': physician_user,
-        'physician_dialogues': physician_dialogues,
+        'clinical_user': clinical_user,
+        'clinical_role_label': clinical_role_label,
+        'clinical_dialogues': clinical_dialogues,
         'approved_patients': approved_patients,
         'search_query': search_query,
         'selected_patient_filter': selected_patient_filter,
@@ -371,10 +536,14 @@ def blog_list(request):
 def blog_detail(request, pk):
     post = get_object_or_404(BlogPost, pk=pk, published=True)
     physician_user = is_physician_user(request.user)
+    dietician_user = is_dietician_user(request.user)
     valid_categories = {value for value, _label in BlogPost.CATEGORY_CHOICES}
+    valid_categories.add(BlogPost.CATEGORY_NUTRITIONNIST)
     category = request.GET.get('category', post.category)
     if category not in valid_categories:
         category = post.category
+
+    category = normalize_blog_category(category)
 
     if physician_user:
         if post.category != BlogPost.CATEGORY_PHYSICIAN:
@@ -383,14 +552,25 @@ def blog_detail(request, pk):
         approved_patients = get_patients_approved_for_physician(request.user)
         if not approved_patients.filter(pk=getattr(post.patient, 'pk', None)).exists():
             return HttpResponseForbidden('You can only access chats for your approved patients.')
+    elif dietician_user:
+        if post.category not in DIETICIAN_CATEGORY_VALUES:
+            return HttpResponseForbidden('Dieticians/Nutritionists can only access Chat with a Dietician/Nutritionist posts.')
+
+        approved_patients = get_patients_approved_for_dietician(request.user)
+        if not approved_patients.filter(pk=getattr(post.patient, 'pk', None)).exists():
+            return HttpResponseForbidden('You can only access chats for your approved patients.')
 
     physician_only_comments = post.category == BlogPost.CATEGORY_PHYSICIAN
+    dietician_only_comments = post.category in DIETICIAN_CATEGORY_VALUES
     can_comment = request.user.is_authenticated
     comment_restriction_message = ''
 
     if is_physician_user(request.user) and post.category != BlogPost.CATEGORY_PHYSICIAN:
         can_comment = False
         comment_restriction_message = 'Physicians can only comment on posts in Chat with a Physician.'
+    elif is_dietician_user(request.user) and post.category not in DIETICIAN_CATEGORY_VALUES:
+        can_comment = False
+        comment_restriction_message = 'Dieticians/Nutritionists can only comment on posts in Chat with a Dietician/Nutritionist.'
     elif physician_only_comments:
         if not is_physician_user(request.user):
             can_comment = False
@@ -402,6 +582,17 @@ def blog_detail(request, pk):
                 if request.user.id not in approved_ids:
                     can_comment = False
                     comment_restriction_message = 'Only physicians approved by this patient can comment in the Chat with a Physician area.'
+    elif dietician_only_comments:
+        if not is_dietician_user(request.user):
+            can_comment = False
+            comment_restriction_message = 'Only dieticians/nutritionists can comment in the Chat with a Dietician/Nutritionist area.'
+        else:
+            all_dieticians_allowed = post_owner_allows_all_dieticians(post)
+            if not all_dieticians_allowed:
+                approved_ids = get_post_owner_approved_dietician_ids(post)
+                if request.user.id not in approved_ids:
+                    can_comment = False
+                    comment_restriction_message = 'Only dieticians/nutritionists approved by this patient can comment in the Chat with a Dietician/Nutritionist area.'
 
     if request.method == 'POST':
         if not can_comment:
@@ -426,10 +617,39 @@ def blog_detail(request, pk):
 
 @login_required
 def prescription_entry(request):
-    if not is_physician_user(request.user):
-        return HttpResponseForbidden('Only physicians can add prescriptions.')
+    patient_user = is_patient_user(request.user)
+    physician_user = is_physician_user(request.user)
+    dietician_user = is_dietician_user(request.user)
+    specialist_user = physician_user or dietician_user
 
-    approved_patients = list(get_patients_approved_for_physician(request.user))
+    if not (patient_user or specialist_user):
+        messages.error(request, 'You do not have permission to access prescriptions.')
+        return redirect_to_role_landing(request.user)
+
+    if patient_user:
+        patient = get_patient_for_user(request.user)
+        prescriptions = []
+        if patient is not None:
+            prescriptions = list(Prescription.objects.filter(patient=patient).order_by('-created_at')[:20])
+
+        if request.method == 'POST':
+            messages.error(request, 'Patients can only view prescriptions.')
+            return redirect('patients:prescription_entry')
+
+        return render(request, 'patients/prescription_form.html', {
+            'form': None,
+            'prescriptions': prescriptions,
+            'approved_patients': [],
+            'selected_patient': patient,
+            'can_add_prescription': False,
+            'prescription_scope_label': 'Your Prescriptions',
+        })
+
+    if physician_user:
+        approved_patients = list(get_patients_approved_for_physician(request.user))
+    else:
+        approved_patients = list(get_patients_approved_for_dietician(request.user))
+
     selected_patient = None
 
     selected_patient_id = request.GET.get('patient_id', '').strip()
@@ -461,6 +681,7 @@ def prescription_entry(request):
 
             prescription = form.save(commit=False)
             prescription.patient = selected_patient
+            prescription.prescribed_by = request.user
             prescription.save()
             messages.success(request, 'Prescription saved successfully.')
             return redirect(f"{request.path}?patient_id={selected_patient.id}")
@@ -478,11 +699,17 @@ def prescription_entry(request):
         'prescriptions': prescriptions,
         'approved_patients': approved_patients,
         'selected_patient': selected_patient,
+        'can_add_prescription': True,
+        'prescription_scope_label': 'Recent Prescription Logs',
     })
 
 
 @login_required
 def lab_result_entry(request):
+    patient_only_response = require_patient_user(request)
+    if patient_only_response is not None:
+        return patient_only_response
+
     patient = get_patient_for_user(request.user)
     if request.method == 'POST':
         form = LabResultForm(request.POST)
@@ -517,6 +744,10 @@ def lab_result_entry(request):
 
 @login_required
 def diabetes_assessment_entry(request):
+    patient_only_response = require_patient_user(request)
+    if patient_only_response is not None:
+        return patient_only_response
+
     patient = get_patient_for_user(request.user)
     if request.method == 'POST':
         form = DiabetesAssessmentForm(request.POST)
@@ -576,14 +807,7 @@ def signup(request):
                 PatientProfile.objects.get_or_create(user=user, defaults={'gestational_age_weeks': 0})
 
             login(request, user)
-
-            role_landing = {
-                UserProfile.ROLE_PATIENT: 'patients:patient_dashboard',
-                UserProfile.ROLE_PHYSICIAN: 'patients:doctor_dashboard',
-                UserProfile.ROLE_DIETICIAN: 'patients:blog_list',
-                UserProfile.ROLE_RESEARCHER: 'patients:researcher_patient_list',
-            }
-            return redirect(role_landing.get(selected_role, 'patients:patient_dashboard'))
+            return redirect(get_role_landing_url_name(user))
     else:
         form = SignUpForm()
     return render(request, 'registration/signup.html', {'form': form})
@@ -591,6 +815,10 @@ def signup(request):
 
 @login_required
 def glucose_log_entry(request):
+    patient_only_response = require_patient_user(request)
+    if patient_only_response is not None:
+        return patient_only_response
+
     # ensure the user has a PatientProfile so they can log readings
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
 
@@ -650,13 +878,21 @@ def glucose_log_entry(request):
 
 @login_required
 def patient_dashboard(request):
+    patient_only_response = require_patient_user(request)
+    if patient_only_response is not None:
+        return patient_only_response
+
     form = GlucoseLogForm()
     # ensure profile exists
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
     physician_users = list(get_physician_users_queryset())
+    dietician_users = list(get_dietician_users_queryset())
     approved_physicians = list(profile.approved_physicians.order_by('username'))
+    approved_dieticians = list(profile.approved_dieticians.order_by('username'))
     approved_physician_ids = {physician.id for physician in approved_physicians}
+    approved_dietician_ids = {dietician.id for dietician in approved_dieticians}
     available_physicians = [physician for physician in physician_users if physician.id not in approved_physician_ids]
+    available_dieticians = [dietician for dietician in dietician_users if dietician.id not in approved_dietician_ids]
     patient = get_patient_for_user(request.user)
     diagnosis_summary = None
     if patient is not None:
@@ -755,19 +991,30 @@ def patient_dashboard(request):
         'available_physicians': available_physicians,
         'approved_physicians': approved_physicians,
         'allow_all_physicians': profile.allow_all_physicians,
+        'dietician_users': dietician_users,
+        'available_dieticians': available_dieticians,
+        'approved_dieticians': approved_dieticians,
+        'allow_all_dieticians': profile.allow_all_dieticians,
     })
 
 
-@login_required
-def update_approved_physicians(request):
-    if request.method != 'POST':
-        return redirect('patients:patient_dashboard')
-
-    profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
-    valid_physician_ids = set(get_physician_users_queryset().values_list('id', flat=True))
+def _update_approved_specialists(
+    request,
+    *,
+    profile,
+    valid_user_ids,
+    allow_all_field,
+    approved_field,
+    selected_value_field,
+    selected_user_id_field,
+    invalid_selection_message,
+    remove_success_message,
+):
     action = request.POST.get('action', 'add').strip()
-    selected_value = request.POST.get('approved_physician', '').strip()
-    selected_user_id = request.POST.get('approved_physician_id', '').strip()
+    selected_value = request.POST.get(selected_value_field, '').strip()
+    selected_user_id = request.POST.get(selected_user_id_field, '').strip()
+
+    approved_relation = getattr(profile, approved_field)
 
     if action == 'remove':
         try:
@@ -775,43 +1022,91 @@ def update_approved_physicians(request):
         except (TypeError, ValueError):
             user_id = None
 
-        profile.allow_all_physicians = False
-        profile.save(update_fields=['allow_all_physicians'])
+        setattr(profile, allow_all_field, False)
+        profile.save(update_fields=[allow_all_field])
 
-        if user_id in valid_physician_ids:
-            profile.approved_physicians.remove(user_id)
-            messages.success(request, 'Physician removed from your approved list.')
+        if user_id in valid_user_ids:
+            approved_relation.remove(user_id)
+            if remove_success_message:
+                messages.success(request, remove_success_message)
         else:
-            messages.error(request, 'Unable to remove physician. Please try again.')
+            messages.error(request, 'Unable to remove specialist. Please try again.')
 
-        return redirect('patients:patient_dashboard')
+        return
 
     if action == 'clear_all':
-        profile.allow_all_physicians = False
-        profile.save(update_fields=['allow_all_physicians'])
-        profile.approved_physicians.clear()
-        messages.success(request, 'Approved physician list cleared.')
-        return redirect('patients:patient_dashboard')
+        setattr(profile, allow_all_field, False)
+        profile.save(update_fields=[allow_all_field])
+        approved_relation.clear()
+        return
 
     if selected_value == '__all__':
-        profile.allow_all_physicians = True
-        profile.save(update_fields=['allow_all_physicians'])
-        profile.approved_physicians.clear()
-        messages.success(request, 'All physicians are now approved for your Chat with a Physician posts.')
-        return redirect('patients:patient_dashboard')
+        setattr(profile, allow_all_field, True)
+        profile.save(update_fields=[allow_all_field])
+        approved_relation.clear()
+        return
 
     try:
         user_id = int(selected_value)
     except (TypeError, ValueError):
         user_id = None
 
-    if user_id in valid_physician_ids:
-        profile.allow_all_physicians = False
-        profile.save(update_fields=['allow_all_physicians'])
-        profile.approved_physicians.add(user_id)
-        messages.success(request, 'Physician added to your approved list.')
+    if user_id in valid_user_ids:
+        setattr(profile, allow_all_field, False)
+        profile.save(update_fields=[allow_all_field])
+        approved_relation.add(user_id)
     else:
-        messages.error(request, 'Please select a valid physician.')
+        messages.error(request, invalid_selection_message)
+
+
+@login_required
+def update_approved_physicians(request):
+    patient_only_response = require_patient_user(request)
+    if patient_only_response is not None:
+        return patient_only_response
+
+    if request.method != 'POST':
+        return redirect('patients:patient_dashboard')
+
+    profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
+    valid_physician_ids = set(get_physician_users_queryset().values_list('id', flat=True))
+    _update_approved_specialists(
+        request,
+        profile=profile,
+        valid_user_ids=valid_physician_ids,
+        allow_all_field='allow_all_physicians',
+        approved_field='approved_physicians',
+        selected_value_field='approved_physician',
+        selected_user_id_field='approved_physician_id',
+        invalid_selection_message='Please select a valid physician.',
+        remove_success_message='Physician removed from your approved list.',
+    )
+
+    return redirect('patients:patient_dashboard')
+
+
+@login_required
+def update_approved_dieticians(request):
+    patient_only_response = require_patient_user(request)
+    if patient_only_response is not None:
+        return patient_only_response
+
+    if request.method != 'POST':
+        return redirect('patients:patient_dashboard')
+
+    profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
+    valid_dietician_ids = set(get_dietician_users_queryset().values_list('id', flat=True))
+    _update_approved_specialists(
+        request,
+        profile=profile,
+        valid_user_ids=valid_dietician_ids,
+        allow_all_field='allow_all_dieticians',
+        approved_field='approved_dieticians',
+        selected_value_field='approved_dietician',
+        selected_user_id_field='approved_dietician_id',
+        invalid_selection_message='Please select a valid dietician/nutritionist.',
+        remove_success_message='Dietician/Nutritionist removed from your approved list.',
+    )
 
     return redirect('patients:patient_dashboard')
 
@@ -845,7 +1140,7 @@ def export_deidentified_csv(request):
     The CSV contains pseudonymized patient IDs (HMAC of profile pk) and removes names/emails/usernames.
     """
     user = request.user
-    allowed = user.groups.filter(name__in=['Clinician', 'Biostatistician']).exists()
+    allowed = user.groups.filter(name='Biostatistician').exists()
     if not allowed:
         return HttpResponseForbidden('You do not have permission to access this resource.')
 
@@ -882,10 +1177,10 @@ def export_deidentified_csv(request):
 @login_required
 def export_research_excel(request):
     """Export researcher dashboard data in an Excel workbook with a column meanings sheet."""
-    if is_physician_user(request.user):
-        patients = get_patients_approved_for_physician(request.user)
-    else:
-        patients = Patient.objects.all().order_by('last_name', 'first_name')
+    if get_user_role(request.user) != UserProfile.ROLE_RESEARCHER:
+        return HttpResponseForbidden('You do not have permission to export this dataset.')
+
+    patients = Patient.objects.all().order_by('last_name', 'first_name')
 
     # Build dynamic lab headers so each lab variable gets dedicated columns.
     lab_name_map = {}
@@ -1145,7 +1440,7 @@ def export_research_excel(request):
 
 @login_required
 def pwa_app(request):
-    return redirect('patients:patient_dashboard')
+    return redirect(get_role_landing_url_name(request.user))
 
 
 @login_required

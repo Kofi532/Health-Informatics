@@ -63,42 +63,49 @@
     <div class="col-lg-6">
       <div class="card prescription-card p-3 p-sm-4">
         <div class="card-body">
-          <h1 class="h4 fw-bold text-gray-900 mb-1 d-flex align-items-center gap-2">
-            <i class="bi bi-file-earmark-medical text-primary"></i> Add a Prescription
-          </h1>
-          <p class="text-muted small mb-4">Draft new therapeutic orders and medication directives down in the panel below.</p>
-          
-          <form method="post" autocomplete="off">
-            {% csrf_token %}
+          {% if can_add_prescription %}
+            <h1 class="h4 fw-bold text-gray-900 mb-1 d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-medical text-primary"></i> Add a Prescription
+            </h1>
+            <p class="text-muted small mb-4">Draft new therapeutic orders and medication directives down in the panel below.</p>
+            
+            <form method="post" autocomplete="off">
+              {% csrf_token %}
 
-            <div class="mb-3">
-              <label class="form-label small fw-semibold text-secondary" for="id_patient_id">Approved Patient</label>
-              <select id="id_patient_id" name="patient_id" class="form-control" required>
-                <option value="">Select approved patient</option>
-                {% for patient in approved_patients %}
-                  <option value="{{ patient.id }}" {% if selected_patient and selected_patient.id == patient.id %}selected{% endif %}>
-                    {{ patient.first_name }} {{ patient.last_name }} ({{ patient.id }})
-                  </option>
-                {% empty %}
-                  <option value="" disabled>No approved patients available</option>
-                {% endfor %}
-              </select>
-            </div>
-            
-            <div class="mb-3">
-              <label class="form-label small fw-semibold text-secondary" for="id_title">Prescription Title / Order Subject</label>
-              {{ form.title }}
-            </div>
-            
-            <div class="mb-4">
-              <label class="form-label small fw-semibold text-secondary" for="id_content">Prescription Details & Regime</label>
-              {{ form.content }}
-            </div>
-            
-            <button class="btn btn-primary px-4 py-2 fw-semibold shadow-sm rounded-3 d-inline-flex align-items-center gap-2" type="submit">
-              <i class="bi bi-plus-circle"></i> Save Prescription
-            </button>
-          </form>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-secondary" for="id_patient_id">Approved Patient</label>
+                <select id="id_patient_id" name="patient_id" class="form-control" required>
+                  <option value="">Select approved patient</option>
+                  {% for patient in approved_patients %}
+                    <option value="{{ patient.id }}" {% if selected_patient and selected_patient.id == patient.id %}selected{% endif %}>
+                      {{ patient.first_name }} {{ patient.last_name }} ({{ patient.id }})
+                    </option>
+                  {% empty %}
+                    <option value="" disabled>No approved patients available</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-secondary" for="id_title">Prescription Title / Order Subject</label>
+                {{ form.title }}
+              </div>
+              
+              <div class="mb-4">
+                <label class="form-label small fw-semibold text-secondary" for="id_content">Prescription Details & Regime</label>
+                {{ form.content }}
+              </div>
+              
+              <button class="btn btn-primary px-4 py-2 fw-semibold shadow-sm rounded-3 d-inline-flex align-items-center gap-2" type="submit">
+                <i class="bi bi-plus-circle"></i> Save Prescription
+              </button>
+            </form>
+          {% else %}
+            <h1 class="h4 fw-bold text-gray-900 mb-1 d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-text text-primary"></i> Your Prescription History
+            </h1>
+            <p class="text-muted small mb-0">You can view prescriptions from approved specialists here. Prescription creation is restricted to specialists.</p>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -107,7 +114,7 @@
       <div class="card prescription-card p-3 p-sm-4">
         <div class="card-body">
           <h2 class="h5 fw-bold text-gray-900 mb-1 d-flex align-items-center gap-2">
-            <i class="bi bi-clock-history text-muted"></i> Recent Prescription Logs
+            <i class="bi bi-clock-history text-muted"></i> {{ prescription_scope_label|default:'Recent Prescription Logs' }}
           </h2>
           <p class="text-muted small mb-4">Review historical pharmaceutical records validated for this profile.</p>
           
@@ -119,6 +126,18 @@
                   <span class="badge bg-light text-secondary border px-2 py-1 rounded text-xs d-inline-flex align-items-center gap-1">
                     <i class="bi bi-calendar3 opacity-75"></i> {{ prescription.created_at|date:"Y-m-d H:i" }}
                   </span>
+                </div>
+
+                <div class="small text-muted mb-2 d-flex align-items-center gap-1">
+                  <i class="bi bi-person-badge"></i>
+                  Issued by
+                  <strong>
+                    {% if prescription.prescribed_by %}
+                      {{ prescription.prescribed_by.get_full_name|default:prescription.prescribed_by.username }}
+                    {% else %}
+                      Specialist
+                    {% endif %}
+                  </strong>
                 </div>
                 
                 <div class="content-box p-2.5 rounded-2 small text-secondary" style="white-space: pre-line;">{{ prescription.content }}</div>

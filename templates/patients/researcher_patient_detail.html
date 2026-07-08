@@ -55,6 +55,79 @@
     </div>
   </div>
 
+  {% if specialist_limited %}
+    <div class="alert border-0 shadow-sm mb-4" style="background-color: #ecfeff; border-left: 4px solid #0891b2 !important; border-radius: 12px;">
+      <div class="fw-bold text-dark mb-1">Specialist Access Scope</div>
+      <div class="small text-muted">This view is limited to blog discussions and assessment records for patients who approved your specialist role.</div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card dossier-card p-4 h-100">
+          <h2 class="section-title d-flex align-items-center gap-2"><i class="bi bi-clipboard2-data text-secondary"></i> Comprehensive Assessments Log</h2>
+          <div class="overflow-y-auto pe-1" style="max-height: 430px;">
+            <ul class="list-group list-group-flush">
+              {% for assessment in assessments %}
+                <li class="list-group-item clinical-list-item p-3">
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="fw-bold text-indigo">{{ assessment.get_assessment_type_display }}</div>
+                    <span class="text-muted text-xs"><i class="bi bi-calendar3 me-1"></i> {{ assessment.assessed_at|date:"Y-m-d" }}</span>
+                  </div>
+                  {% if assessment.diabetes_type %}
+                    <div class="small mb-2"><span class="text-muted">Classification Tier:</span> <span class="badge bg-dark-subtle text-dark-emphasis px-2">{{ assessment.get_diabetes_type_display }}</span></div>
+                  {% endif %}
+                  <div class="d-flex flex-wrap gap-2 my-2">
+                    {% if assessment.fasting_glucose %}<span class="badge bg-light text-dark border px-2 py-1">FBG: <strong>{{ assessment.fasting_glucose }}</strong></span>{% endif %}
+                    {% if assessment.post_meal_glucose %}<span class="badge bg-light text-dark border px-2 py-1">Post-Meal: <strong>{{ assessment.post_meal_glucose }}</strong></span>{% endif %}
+                    {% if assessment.hba1c %}<span class="badge bg-danger-subtle text-danger px-2 py-1">HbA1c: <strong>{{ assessment.hba1c }}%</strong></span>{% endif %}
+                  </div>
+                </li>
+              {% empty %}
+                <li class="list-group-item small text-muted text-center py-4">No detailed metric assessment documents mapped.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card dossier-card p-4 h-100">
+          <h2 class="section-title d-flex align-items-center gap-2"><i class="bi bi-chat-square-quote text-info"></i> Qualitative Content Interchanges</h2>
+          <div class="overflow-y-auto pe-1" style="max-height: 430px;">
+            <div class="content-stream-title small fw-bold text-uppercase tracking-wider text-muted mb-2"><i class="bi bi-journal-text me-1"></i> Patient Authored Posts</div>
+            <ul class="list-group list-group-flush mb-4">
+              {% for post in blog_posts %}
+                <li class="list-group-item clinical-list-item p-3">
+                  <div class="fw-bold text-dark">{{ post.title }}</div>
+                  <div class="text-xs text-muted mb-2">{{ post.published_at|date:"Y-m-d" }} | <span class="badge bg-light text-dark border">{{ post.get_category_display }}</span></div>
+                  <div class="small text-secondary" style="white-space: pre-line;">{{ post.body|truncatechars:140 }}</div>
+                </li>
+              {% empty %}
+                <li class="list-group-item small text-muted text-center py-2 border-0">No published articles.</li>
+              {% endfor %}
+            </ul>
+
+            <div class="content-stream-title small fw-bold text-uppercase tracking-wider text-muted mb-2"><i class="bi bi-chat-left-dots me-1"></i> Narrative Comments Matrix</div>
+            <ul class="list-group list-group-flush">
+              {% for comment in comments %}
+                <li class="list-group-item clinical-list-item p-3">
+                  <div class="text-xs text-muted mb-1 d-flex justify-content-between">
+                    <span><i class="bi bi-reply me-1"></i> Ref: {{ comment.post.title|truncatechars:30 }}</span>
+                    <span>{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                  </div>
+                  <div class="p-2 rounded bg-light text-dark small italic">"{{ comment.content }}"</div>
+                  <div class="text-xs text-indigo mt-1">Category Domain: {{ comment.post.get_category_display }}</div>
+                </li>
+              {% empty %}
+                <li class="list-group-item small text-muted text-center py-2 border-0">No conversational history logs verified.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+
   <!-- Primary Profile Metrics Row -->
   <div class="row g-4">
     <!-- Patient Profile Data -->
@@ -396,4 +469,5 @@
       </div>
     </div>
   </div>
+  {% endif %}
 {% endblock %}

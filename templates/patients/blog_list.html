@@ -59,12 +59,12 @@
         </div>
     </div>
 
-    {% if physician_user %}
+    {% if clinical_user %}
         <div class="card blog-card p-4 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-left: 4px solid #0ea5e9 !important;">
             <h5 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
-                <i class="bi bi-chat-left-dots-fill text-info"></i> Physician Dialogue Box
+                <i class="bi bi-chat-left-dots-fill text-info"></i> {{ clinical_role_label }} Dialogue Box
             </h5>
-            <p class="text-muted small mb-3">Only chats with your approved patients are shown. Select a patient username to open the conversation thread.</p>
+            <p class="text-muted small mb-3">Only chats with patients who approved your {{ clinical_role_label|lower }} role are shown. Select a patient username to open the conversation thread.</p>
 
             <form method="get" action="{% url 'patients:blog_list' %}" class="mb-3">
                 <label for="approved_patient" class="form-label small fw-semibold text-secondary">Approved patients</label>
@@ -96,7 +96,7 @@
             </form>
 
             <div class="d-flex flex-column gap-2">
-                {% for dialogue in physician_dialogues %}
+                {% for dialogue in clinical_dialogues %}
                     <a class="d-flex align-items-start justify-content-between border rounded-3 px-3 py-2 text-decoration-none text-dark bg-white" href="{% if dialogue.latest_post %}{% url 'patients:blog_detail' dialogue.latest_post.pk %}?category={{ active_category }}{% else %}{% url 'patients:blog_list' %}?category={{ active_category }}{% endif %}">
                         <div class="d-flex flex-column gap-1">
                             <div class="d-flex align-items-center gap-2">
@@ -146,7 +146,7 @@
     {% endif %}
 
     <!-- Inline Creator Input Section (Authenticated Users) -->
-    {% if user.is_authenticated and not physician_user %}
+    {% if user.is_authenticated and not clinical_user %}
         <div class="card blog-card p-4 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #fcfdfe 100%); border-left: 4px solid #10b981 !important;">
             <div>
                 <div class="d-flex align-items-center justify-content-between mb-2">
@@ -175,7 +175,7 @@
 
     <!-- Longitudinal Content Timeline Ledger -->
     <div class="mb-3 d-flex align-items-center gap-2 text-secondary px-1">
-        <i class="bi bi-chat-square-text"></i> <span class="small text-uppercase fw-bold tracking-wider">{% if physician_user %}Patient Chat Threads{% else %}Timeline Feed Logs{% endif %}</span>
+        <i class="bi bi-chat-square-text"></i> <span class="small text-uppercase fw-bold tracking-wider">{% if clinical_user %}Patient Chat Threads{% else %}Timeline Feed Logs{% endif %}</span>
     </div>
 
     <div class="list-group list-group-flush shadow-none">
