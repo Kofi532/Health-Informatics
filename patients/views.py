@@ -66,6 +66,21 @@ def get_post_owner_approved_physician_ids(post):
     return set(patient_profile.approved_physicians.values_list('id', flat=True))
 
 
+def post_owner_allows_all_physicians(post):
+    if post.patient is None:
+        return False
+
+    owner_profile = UserProfile.objects.filter(patient=post.patient).select_related('user').first()
+    if owner_profile is None:
+        return False
+
+    patient_profile = PatientProfile.objects.filter(user=owner_profile.user).only('allow_all_physicians').first()
+    if patient_profile is None:
+        return False
+
+    return bool(patient_profile.allow_all_physicians)
+
+
 def get_patient_for_user(user):
     if not getattr(user, 'is_authenticated', False):
         return None
@@ -274,10 +289,12 @@ def blog_detail(request, pk):
             can_comment = False
             comment_restriction_message = 'Only physicians can comment in the Chat with a Physician area.'
         else:
-            approved_ids = get_post_owner_approved_physician_ids(post)
-            if request.user.id not in approved_ids:
-                can_comment = False
-                comment_restriction_message = 'Only physicians approved by this patient can comment in the Chat with a Physician area.'
+            all_physicians_allowed = post_owner_allows_all_physicians(post)
+            if not all_physicians_allowed:
+                approved_ids = get_post_owner_approved_physician_ids(post)
+                if request.user.id not in approved_ids:
+                    can_comment = False
+                    comment_restriction_message = 'Only physicians approved by this patient can comment in the Chat with a Physician area.'
 
     if request.method == 'POST':
         if not can_comment:
@@ -507,7 +524,12 @@ def patient_dashboard(request):
     # ensure profile exists
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
     physician_users = list(get_physician_users_queryset())
-    approved_physician_ids = set(profile.approved_physicians.values_list('id', flat=True))
+    approved_physician_ids = list(profile.approved_physicians.values_list('id', flat=True).order_by('id'))
+    selected_physician_id = ''
+    if profile.allow_all_physicians:
+        selected_physician_id = '__all__'
+    elif approved_physician_ids:
+        selected_physician_id = str(approved_physician_ids[0])
     patient = get_patient_for_user(request.user)
     diagnosis_summary = None
     if patient is not None:
@@ -603,7 +625,7 @@ def patient_dashboard(request):
         'today_medications': today_medications,
         'diagnosis_summary': diagnosis_summary,
         'physician_users': physician_users,
-        'approved_physician_ids': approved_physician_ids,
+        'selected_physician_id': selected_physician_id,
     })
 
 
@@ -614,19 +636,29 @@ def update_approved_physicians(request):
 
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
     valid_physician_ids = set(get_physician_users_queryset().values_list('id', flat=True))
-    submitted_ids = request.POST.getlist('approved_physicians')
+    selected_value = request.POST.get('approved_physician', '').strip()
 
-    selected_ids = []
-    for raw_id in submitted_ids:
-        try:
-            user_id = int(raw_id)
-        except (TypeError, ValueError):
-            continue
-        if user_id in valid_physician_ids:
-            selected_ids.append(user_id)
+    if selected_value == '__all__':
+        profile.allow_all_physicians = True
+        profile.save(update_fields=['allow_all_physicians'])
+        messages.success(request, 'All physicians are now approved for your Chat with a Physician posts.')
+        return redirect('patients:patient_dashboard')
 
-    profile.approved_physicians.set(selected_ids)
-    messages.success(request, 'Approved physicians updated successfully.')
+    try:
+        user_id = int(selected_value)
+    except (TypeError, ValueError):
+        user_id = None
+
+    profile.allow_all_physicians = False
+    profile.save(update_fields=['allow_all_physicians'])
+
+    if user_id in valid_physician_ids:
+        profile.approved_physicians.set([user_id])
+        messages.success(request, 'Approved physician updated successfully.')
+    else:
+        profile.approved_physicians.clear()
+        messages.success(request, 'No physician selected. Physician commenting access is currently restricted.')
+
     return redirect('patients:patient_dashboard')
 
 

@@ -159,23 +159,25 @@
                     </h5>
 
                     <p class="text-muted small mb-3">
-                        Select one or more physician usernames who are allowed to comment on your posts in the Chat with a Physician section.
+                        Choose the physician allowed to comment on your Chat with a Physician posts, or choose All Physicians.
                     </p>
 
                     <form method="post" action="{% url 'patients:update_approved_physicians' %}" class="django-form-row">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="approved_physicians" class="form-label">Physician usernames</label>
-                            <select id="approved_physicians" name="approved_physicians" class="form-select" multiple size="6">
+                            <label for="approved_physician" class="form-label">Approved physician</label>
+                            <select id="approved_physician" name="approved_physician" class="form-select">
+                                <option value="">Select a physician</option>
+                                <option value="__all__" {% if selected_physician_id == '__all__' %}selected{% endif %}>All Physicians</option>
                                 {% for physician in physician_users %}
-                                    <option value="{{ physician.id }}" {% if physician.id in approved_physician_ids %}selected{% endif %}>
+                                    <option value="{{ physician.id }}" {% if selected_physician_id == physician.id|stringformat:'s' %}selected{% endif %}>
                                         {{ physician.username }}{% if physician.get_full_name %} - {{ physician.get_full_name }}{% endif %}
                                     </option>
                                 {% empty %}
                                     <option value="" disabled>No physicians available yet.</option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">Hold Ctrl (or Command on Mac) to select multiple physicians.</div>
+                            <div class="form-text">Selecting All Physicians allows any physician to comment in Chat with a Physician.</div>
                         </div>
 
                         <div class="text-end">

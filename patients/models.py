@@ -136,6 +136,10 @@ class PatientProfile(models.Model):
     gestational_age_weeks = models.PositiveIntegerField()
     target_fasting_glucose = models.PositiveIntegerField(default=95)
     doctor_email = models.EmailField(blank=True, null=True, help_text='Email address of assigned doctor for critical alerts')
+    allow_all_physicians = models.BooleanField(
+        default=False,
+        help_text='If enabled, any physician can comment in this patient\'s Chat with a Physician posts.'
+    )
     approved_physicians = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
