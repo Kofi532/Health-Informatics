@@ -66,21 +66,41 @@
             </h5>
             <p class="text-muted small mb-3">Only chats with your approved patients are shown. Select a patient username to open the conversation thread.</p>
 
+            <form method="get" action="{% url 'patients:blog_list' %}" class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search patient username...">
+                    <button class="btn btn-outline-secondary" type="submit">Search</button>
+                </div>
+            </form>
+
             <div class="d-flex flex-column gap-2">
                 {% for dialogue in physician_dialogues %}
-                    <a class="d-flex align-items-center justify-content-between border rounded-3 px-3 py-2 text-decoration-none text-dark bg-white" href="{% if dialogue.latest_post %}{% url 'patients:blog_detail' dialogue.latest_post.pk %}?category={{ active_category }}{% else %}{% url 'patients:blog_list' %}?category={{ active_category }}{% endif %}">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-info-subtle text-info border border-info-subtle">{{ dialogue.patient_username }}</span>
-                            <span class="small text-muted">{{ dialogue.patient.first_name }} {{ dialogue.patient.last_name }}</span>
+                    <a class="d-flex align-items-start justify-content-between border rounded-3 px-3 py-2 text-decoration-none text-dark bg-white" href="{% if dialogue.latest_post %}{% url 'patients:blog_detail' dialogue.latest_post.pk %}?category={{ active_category }}{% else %}{% url 'patients:blog_list' %}?category={{ active_category }}{% endif %}">
+                        <div class="d-flex flex-column gap-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-info-subtle text-info border border-info-subtle">{{ dialogue.patient_username }}</span>
+                                <span class="small text-muted">{{ dialogue.patient.first_name }} {{ dialogue.patient.last_name }}</span>
+                            </div>
+                            {% if dialogue.last_message_preview %}
+                                <div class="small text-secondary" style="max-width: 520px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ dialogue.last_message_preview }}
+                                </div>
+                            {% else %}
+                                <div class="small text-muted">No messages yet.</div>
+                            {% endif %}
                         </div>
-                        {% if dialogue.latest_post %}
-                            <span class="small text-primary">Open chat</span>
-                        {% else %}
-                            <span class="small text-muted">No posts yet</span>
-                        {% endif %}
+                        <div class="d-flex flex-column align-items-end gap-1">
+                            {% if dialogue.last_message_at %}
+                                <span class="small text-muted">{{ dialogue.last_message_at|date:'M j, g:i a' }}</span>
+                            {% endif %}
+                            {% if dialogue.unread_count %}
+                                <span class="badge rounded-pill bg-success">{{ dialogue.unread_count }}</span>
+                            {% endif %}
+                        </div>
                     </a>
                 {% empty %}
-                    <div class="text-muted small">No approved patients available for physician chat.</div>
+                    <div class="text-muted small">No approved patient chats matched your search.</div>
                 {% endfor %}
             </div>
         </div>

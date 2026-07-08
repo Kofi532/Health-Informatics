@@ -5,7 +5,7 @@ from django.contrib.auth import login
 from django.contrib.auth.models import Group, User
 from django.utils import timezone
 from django.contrib import messages
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils.text import slugify
 from django.http import HttpResponse, HttpResponseForbidden
 from django.conf import settings
@@ -245,6 +245,7 @@ def researcher_patient_detail(request, pk):
 @login_required
 def blog_list(request):
     physician_user = is_physician_user(request.user)
+    search_query = request.GET.get('q', '').strip()
     category_choices = list(BlogPost.CATEGORY_CHOICES)
     valid_categories = {value for value, _label in category_choices}
     category_labels = dict(category_choices)
@@ -291,17 +292,55 @@ def blog_list(request):
 
     if physician_user:
         approved_patients = list(get_patients_approved_for_physician(request.user))
+        if search_query:
+            query_lower = search_query.lower()
+            filtered_patients = []
+            for patient in approved_patients:
+                owner_profile = UserProfile.objects.filter(patient=patient).select_related('user').first()
+                patient_username = owner_profile.user.username if owner_profile is not None else ''
+                full_name = f"{patient.first_name} {patient.last_name}".strip()
+                if query_lower in patient_username.lower() or query_lower in full_name.lower():
+                    filtered_patients.append(patient)
+            approved_patients = filtered_patients
+
         posts = posts.filter(patient__in=approved_patients)
+        physician_patient = get_patient_for_user(request.user)
 
         for patient in approved_patients:
             owner_profile = UserProfile.objects.filter(patient=patient).select_related('user').first()
             patient_username = owner_profile.user.username if owner_profile is not None else 'unknown'
-            latest_post = posts.filter(patient=patient).order_by('-published_at').first()
+            patient_posts = posts.filter(patient=patient)
+            latest_post = patient_posts.order_by('-published_at').first()
+
+            latest_comment = Comment.objects.filter(post__in=patient_posts).order_by('-created_at').first()
+            latest_message_preview = ''
+            last_message_at = None
+            if latest_comment is not None and (latest_post is None or latest_comment.created_at >= latest_post.published_at):
+                latest_message_preview = latest_comment.content
+                last_message_at = latest_comment.created_at
+            elif latest_post is not None:
+                latest_message_preview = latest_post.body
+                last_message_at = latest_post.published_at
+
+            unread_qs = Comment.objects.filter(post__in=patient_posts)
+            if physician_patient is not None:
+                unread_count = unread_qs.exclude(patient=physician_patient).count()
+            else:
+                unread_count = unread_qs.count()
+
             physician_dialogues.append({
                 'patient': patient,
                 'patient_username': patient_username,
                 'latest_post': latest_post,
+                'last_message_preview': latest_message_preview,
+                'last_message_at': last_message_at,
+                'unread_count': unread_count,
             })
+
+        physician_dialogues.sort(
+            key=lambda item: item['last_message_at'] or timezone.make_aware(datetime.min),
+            reverse=True,
+        )
 
     return render(request, 'patients/blog_list.html', {
         'posts': posts,
@@ -310,6 +349,7 @@ def blog_list(request):
         'physician_user': physician_user,
         'physician_dialogues': physician_dialogues,
         'approved_patients': approved_patients,
+        'search_query': search_query,
         'blog_categories': [
             {'value': value, 'label': label}
             for value, label in category_choices
