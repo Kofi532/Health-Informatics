@@ -51,6 +51,13 @@ def get_physician_users_queryset():
     ).distinct().order_by('username')
 
 
+def get_patients_approved_for_physician(user):
+    return Patient.objects.filter(
+        Q(user_profile__user__patient_profile__allow_all_physicians=True)
+        | Q(user_profile__user__patient_profile__approved_physicians=user)
+    ).distinct().order_by('last_name', 'first_name')
+
+
 def get_post_owner_approved_physician_ids(post):
     if post.patient is None:
         return set()
@@ -141,7 +148,11 @@ def patient_detail(request, pk):
 
 @login_required
 def researcher_patient_list(request):
-    patients = Patient.objects.all().order_by('last_name', 'first_name')
+    if is_physician_user(request.user):
+        patients = get_patients_approved_for_physician(request.user)
+    else:
+        patients = Patient.objects.all().order_by('last_name', 'first_name')
+
     patient_content = []
     for patient in patients:
         blog_posts = list(patient.blog_posts.filter(published=True).order_by('-published_at')[:3])
@@ -165,6 +176,10 @@ def researcher_patient_list(request):
 @login_required
 def researcher_patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
+    if is_physician_user(request.user):
+        allowed_patients = get_patients_approved_for_physician(request.user)
+        if not allowed_patients.filter(pk=patient.pk).exists():
+            return HttpResponseForbidden('You can only view research data for your approved patients.')
 
     try:
         user_profile = patient.user_profile
@@ -284,7 +299,10 @@ def blog_detail(request, pk):
     can_comment = request.user.is_authenticated
     comment_restriction_message = ''
 
-    if physician_only_comments:
+    if is_physician_user(request.user) and post.category != BlogPost.CATEGORY_PHYSICIAN:
+        can_comment = False
+        comment_restriction_message = 'Physicians can only comment on posts in Chat with a Physician.'
+    elif physician_only_comments:
         if not is_physician_user(request.user):
             can_comment = False
             comment_restriction_message = 'Only physicians can comment in the Chat with a Physician area.'
@@ -319,35 +337,58 @@ def blog_detail(request, pk):
 
 @login_required
 def prescription_entry(request):
-    patient = get_patient_for_user(request.user)
+    if not is_physician_user(request.user):
+        return HttpResponseForbidden('Only physicians can add prescriptions.')
+
+    approved_patients = list(get_patients_approved_for_physician(request.user))
+    selected_patient = None
+
+    selected_patient_id = request.GET.get('patient_id', '').strip()
+    if request.method == 'POST':
+        selected_patient_id = request.POST.get('patient_id', '').strip() or selected_patient_id
+
+    if selected_patient_id:
+        try:
+            selected_patient = next(
+                patient for patient in approved_patients if patient.id == int(selected_patient_id)
+            )
+        except (ValueError, StopIteration):
+            selected_patient = None
+
+    if selected_patient is None and approved_patients:
+        selected_patient = approved_patients[0]
+
     if request.method == 'POST':
         form = PrescriptionForm(request.POST)
         if form.is_valid():
-            if patient is None:
-                patient_profile = UserProfile.objects.filter(user=request.user).first()
-                if patient_profile is not None:
-                    patient = patient_profile.patient
-            if patient is None:
-                messages.error(request, 'No patient profile is linked to your account yet. Please contact support.')
-                return render(request, 'patients/prescription_form.html', {'form': form, 'prescriptions': []})
+            if selected_patient is None:
+                messages.error(request, 'Select an approved patient before adding a prescription.')
+                return render(request, 'patients/prescription_form.html', {
+                    'form': form,
+                    'prescriptions': [],
+                    'approved_patients': approved_patients,
+                    'selected_patient': None,
+                })
 
             prescription = form.save(commit=False)
-            prescription.patient = patient
+            prescription.patient = selected_patient
             prescription.save()
             messages.success(request, 'Prescription saved successfully.')
-            return redirect('patients:prescription_entry')
+            return redirect(f"{request.path}?patient_id={selected_patient.id}")
         else:
             messages.error(request, 'Please complete the prescription form correctly.')
     else:
         form = PrescriptionForm()
 
     prescriptions = []
-    if patient is not None:
-        prescriptions = list(Prescription.objects.filter(patient=patient).order_by('-created_at')[:10])
+    if selected_patient is not None:
+        prescriptions = list(Prescription.objects.filter(patient=selected_patient).order_by('-created_at')[:10])
 
     return render(request, 'patients/prescription_form.html', {
         'form': form,
         'prescriptions': prescriptions,
+        'approved_patients': approved_patients,
+        'selected_patient': selected_patient,
     })
 
 
@@ -752,7 +793,10 @@ def export_deidentified_csv(request):
 @login_required
 def export_research_excel(request):
     """Export researcher dashboard data in an Excel workbook with a column meanings sheet."""
-    patients = Patient.objects.all().order_by('last_name', 'first_name')
+    if is_physician_user(request.user):
+        patients = get_patients_approved_for_physician(request.user)
+    else:
+        patients = Patient.objects.all().order_by('last_name', 'first_name')
 
     # Build dynamic lab headers so each lab variable gets dedicated columns.
     lab_name_map = {}

@@ -70,6 +70,20 @@
           
           <form method="post" autocomplete="off">
             {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-secondary" for="id_patient_id">Approved Patient</label>
+              <select id="id_patient_id" name="patient_id" class="form-control" required>
+                <option value="">Select approved patient</option>
+                {% for patient in approved_patients %}
+                  <option value="{{ patient.id }}" {% if selected_patient and selected_patient.id == patient.id %}selected{% endif %}>
+                    {{ patient.first_name }} {{ patient.last_name }} ({{ patient.id }})
+                  </option>
+                {% empty %}
+                  <option value="" disabled>No approved patients available</option>
+                {% endfor %}
+              </select>
+            </div>
             
             <div class="mb-3">
               <label class="form-label small fw-semibold text-secondary" for="id_title">Prescription Title / Order Subject</label>
