@@ -4,72 +4,101 @@
 {% block title %}Sign up - ASTA624 PROJECT{% endblock %}
 
 {% block content %}
+<div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card shadow-sm">
+            <div class="card border-0 shadow-sm p-3 p-md-4">
                 <div class="card-body">
-                    <h3 class="card-title mb-3">Create Account</h3>
-                                        <form method="post" id="signup-form">
-                                                {% csrf_token %}
-                                                {% if form.non_field_errors %}
-                                                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-                                                {% endif %}
+                    <h3 class="card-title fw-bold text-dark mb-1">Create Account</h3>
+                    <p class="text-muted small mb-4">Please fill in your details to get started.</p>
+                    
+                    <form method="post" id="signup-form" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger p-2 small mb-3">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
 
-                                                <div class="mb-3">
-                                                    {{ form.username.label_tag }}
-                                                    {{ form.username }}
-                                                    {% if form.username.errors %}
-                                                        <div class="text-danger small">{{ form.username.errors.0 }}</div>
-                                                    {% endif %}
-                                                </div>
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold small text-secondary">
+                                Username
+                            </label>
+                            {# We inject the Bootstrap class manually using a custom widget or add_class filter if available, or force style them #}
+                            <input type="text" name="username" id="id_username" class="form-control" placeholder="Enter username" value="{{ form.username.value|default_if_none:'' }}" required>
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                                                <div class="mb-3">
-                                                    {{ form.email.label_tag }}
-                                                    {{ form.email }}
-                                                    {% if form.email.errors %}
-                                                        <div class="text-danger small">{{ form.email.errors.0 }}</div>
-                                                    {% endif %}
-                                                </div>
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold small text-secondary">
+                                Email Address
+                            </label>
+                            <input type="email" name="email" id="id_email" class="form-control" placeholder="name@example.com" value="{{ form.email.value|default_if_none:'' }}" required>
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                                                <div class="mb-3">
-                                                    {{ form.password1.label_tag }}
-                                                    {{ form.password1 }}
-                                                    {% if form.password1.errors %}
-                                                        <div class="text-danger small">{{ form.password1.errors.0 }}</div>
-                                                    {% endif %}
-                                                </div>
+                        <div class="mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold small text-secondary">
+                                Password
+                            </label>
+                            <input type="password" name="password1" id="id_password1" class="form-control" placeholder="Create a strong password" required>
+                            {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                                                <div class="mb-3">
-                                                    {{ form.password2.label_tag }}
-                                                    {{ form.password2 }}
-                                                    {% if form.password2.errors %}
-                                                        <div class="text-danger small">{{ form.password2.errors.0 }}</div>
-                                                    {% endif %}
-                                                </div>
+                        <div class="mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold small text-secondary">
+                                Confirm Password
+                            </label>
+                            <input type="password" name="password2" id="id_password2" class="form-control" placeholder="Repeat your password" required>
+                            {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                                                <div class="mb-3 form-check">
-                                                    <input type="checkbox" class="form-check-input" id="show-signup-passwords">
-                                                    <label class="form-check-label" for="show-signup-passwords">Show passwords</label>
-                                                </div>
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" class="form-check-input" id="show-signup-passwords">
+                            <label class="form-check-label small text-muted user-select-none" for="show-signup-passwords">
+                                Show passwords
+                            </label>
+                        </div>
 
-                                                <div class="mb-3 form-check">
-                                                    <input type="checkbox" class="form-check-input" id="id_agree_to_terms" name="agree_to_terms" {% if form.agree_to_terms.value %}checked{% endif %}>
-                                                    <label class="form-check-label" for="id_agree_to_terms">I understand that my personal information will be treated in accordance with the <a href="/privacy/">ASTA624 PROJECT Privacy Notice</a> and I have read and agree to <a href="/terms/">ASTA624 PROJECT Terms of Use</a>.</label>
-                                                    {% if form.agree_to_terms.errors %}
-                                                        <div class="text-danger small mt-1">{{ form.agree_to_terms.errors.0 }}</div>
-                                                    {% endif %}
-                                                    <div id="agree-error" class="text-danger small mt-1" style="display:none;"></div>
-                                                </div>
+                        <hr class="text-muted opacity-25 my-4">
 
-                                                <div class="d-grid">
-                                                        <button class="btn btn-primary" type="submit">Sign Up</button>
-                                                </div>
-                                        </form>
-                                        <p class="mt-3">Already have an account? <a href="{% url 'patients:login' %}">Login here</a>.</p>
+                        <div class="mb-4 form-check alignment-fix">
+                            <input type="checkbox" class="form-check-input" id="id_agree_to_terms" name="agree_to_terms" {% if form.agree_to_terms.value %}checked{% endif %}>
+                            <label class="form-check-label small text-muted" for="id_agree_to_terms" style="line-height: 1.5;">
+                                I understand that my personal information will be treated in accordance with the 
+                                <a href="/privacy/" class="text-decoration-none">ASTA624 PROJECT Privacy Notice</a> and I agree to the 
+                                <a href="/terms/" class="text-decoration-none">Terms of Use</a>.
+                            </label>
+                            {% if form.agree_to_terms.errors %}
+                                <div class="text-danger small mt-1">{{ form.agree_to_terms.errors.0 }}</div>
+                            {% endif %}
+                            <div id="agree-error" class="text-danger small mt-2 fw-medium" style="display:none;"></div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary py-2 fw-semibold" type="submit">Create Account</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="small text-muted mb-0">
+                            Already have an account? <a href="{% url 'patients:login' %}" class="text-decoration-none fw-semibold">Login here</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
