@@ -524,12 +524,9 @@ def patient_dashboard(request):
     # ensure profile exists
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
     physician_users = list(get_physician_users_queryset())
-    approved_physician_ids = list(profile.approved_physicians.values_list('id', flat=True).order_by('id'))
-    selected_physician_id = ''
-    if profile.allow_all_physicians:
-        selected_physician_id = '__all__'
-    elif approved_physician_ids:
-        selected_physician_id = str(approved_physician_ids[0])
+    approved_physicians = list(profile.approved_physicians.order_by('username'))
+    approved_physician_ids = {physician.id for physician in approved_physicians}
+    available_physicians = [physician for physician in physician_users if physician.id not in approved_physician_ids]
     patient = get_patient_for_user(request.user)
     diagnosis_summary = None
     if patient is not None:
@@ -625,7 +622,9 @@ def patient_dashboard(request):
         'today_medications': today_medications,
         'diagnosis_summary': diagnosis_summary,
         'physician_users': physician_users,
-        'selected_physician_id': selected_physician_id,
+        'available_physicians': available_physicians,
+        'approved_physicians': approved_physicians,
+        'allow_all_physicians': profile.allow_all_physicians,
     })
 
 
@@ -636,11 +635,38 @@ def update_approved_physicians(request):
 
     profile, _ = PatientProfile.objects.get_or_create(user=request.user, defaults={'gestational_age_weeks': 0})
     valid_physician_ids = set(get_physician_users_queryset().values_list('id', flat=True))
+    action = request.POST.get('action', 'add').strip()
     selected_value = request.POST.get('approved_physician', '').strip()
+    selected_user_id = request.POST.get('approved_physician_id', '').strip()
+
+    if action == 'remove':
+        try:
+            user_id = int(selected_user_id)
+        except (TypeError, ValueError):
+            user_id = None
+
+        profile.allow_all_physicians = False
+        profile.save(update_fields=['allow_all_physicians'])
+
+        if user_id in valid_physician_ids:
+            profile.approved_physicians.remove(user_id)
+            messages.success(request, 'Physician removed from your approved list.')
+        else:
+            messages.error(request, 'Unable to remove physician. Please try again.')
+
+        return redirect('patients:patient_dashboard')
+
+    if action == 'clear_all':
+        profile.allow_all_physicians = False
+        profile.save(update_fields=['allow_all_physicians'])
+        profile.approved_physicians.clear()
+        messages.success(request, 'Approved physician list cleared.')
+        return redirect('patients:patient_dashboard')
 
     if selected_value == '__all__':
         profile.allow_all_physicians = True
         profile.save(update_fields=['allow_all_physicians'])
+        profile.approved_physicians.clear()
         messages.success(request, 'All physicians are now approved for your Chat with a Physician posts.')
         return redirect('patients:patient_dashboard')
 
@@ -649,15 +675,13 @@ def update_approved_physicians(request):
     except (TypeError, ValueError):
         user_id = None
 
-    profile.allow_all_physicians = False
-    profile.save(update_fields=['allow_all_physicians'])
-
     if user_id in valid_physician_ids:
-        profile.approved_physicians.set([user_id])
-        messages.success(request, 'Approved physician updated successfully.')
+        profile.allow_all_physicians = False
+        profile.save(update_fields=['allow_all_physicians'])
+        profile.approved_physicians.add(user_id)
+        messages.success(request, 'Physician added to your approved list.')
     else:
-        profile.approved_physicians.clear()
-        messages.success(request, 'No physician selected. Physician commenting access is currently restricted.')
+        messages.error(request, 'Please select a valid physician.')
 
     return redirect('patients:patient_dashboard')
 

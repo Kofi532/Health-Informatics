@@ -162,19 +162,50 @@
                         Choose the physician allowed to comment on your Chat with a Physician posts, or choose All Physicians.
                     </p>
 
+                    <div class="mb-3">
+                        <label class="form-label">Currently approved</label>
+                        {% if allow_all_physicians %}
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">All Physicians</span>
+                                <form method="post" action="{% url 'patients:update_approved_physicians' %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="clear_all">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
+                            </div>
+                        {% elif approved_physicians %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for physician in approved_physicians %}
+                                    <div class="badge bg-light text-dark border px-2 py-2 d-inline-flex align-items-center gap-2">
+                                        <span>{{ physician.username }}</span>
+                                        <form method="post" action="{% url 'patients:update_approved_physicians' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="remove">
+                                            <input type="hidden" name="approved_physician_id" value="{{ physician.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Remove {{ physician.username }}">x</button>
+                                        </form>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted small">No physicians selected.</div>
+                        {% endif %}
+                    </div>
+
                     <form method="post" action="{% url 'patients:update_approved_physicians' %}" class="django-form-row">
                         {% csrf_token %}
+                        <input type="hidden" name="action" value="add">
                         <div class="mb-3">
                             <label for="approved_physician" class="form-label">Approved physician</label>
                             <select id="approved_physician" name="approved_physician" class="form-select">
                                 <option value="">Select a physician</option>
-                                <option value="__all__" {% if selected_physician_id == '__all__' %}selected{% endif %}>All Physicians</option>
-                                {% for physician in physician_users %}
-                                    <option value="{{ physician.id }}" {% if selected_physician_id == physician.id|stringformat:'s' %}selected{% endif %}>
+                                <option value="__all__">All Physicians</option>
+                                {% for physician in available_physicians %}
+                                    <option value="{{ physician.id }}">
                                         {{ physician.username }}{% if physician.get_full_name %} - {{ physician.get_full_name }}{% endif %}
                                     </option>
                                 {% empty %}
-                                    <option value="" disabled>No physicians available yet.</option>
+                                    <option value="" disabled>No additional physicians available.</option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">Selecting All Physicians allows any physician to comment in Chat with a Physician.</div>
@@ -182,7 +213,7 @@
 
                         <div class="text-end">
                             <button class="btn btn-info text-white px-4 py-2 fw-medium shadow-sm rounded-3" type="submit">
-                                <i class="bi bi-save me-1"></i> Update Approved Physicians
+                                <i class="bi bi-plus-circle me-1"></i> Add Physician
                             </button>
                         </div>
                     </form>
