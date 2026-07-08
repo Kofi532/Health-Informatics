@@ -34,6 +34,17 @@ def _export_cell(value):
     return value
 
 
+def is_physician_user(user):
+    if not getattr(user, 'is_authenticated', False):
+        return False
+
+    profile = UserProfile.objects.filter(user=user).only('role').first()
+    if profile is not None and profile.role == UserProfile.ROLE_PHYSICIAN:
+        return True
+
+    return user.groups.filter(name='Clinician').exists()
+
+
 def get_patient_for_user(user):
     if not getattr(user, 'is_authenticated', False):
         return None
@@ -232,7 +243,20 @@ def blog_detail(request, pk):
     category = request.GET.get('category', post.category)
     if category not in valid_categories:
         category = post.category
+
+    physician_only_comments = post.category == BlogPost.CATEGORY_PHYSICIAN
+    can_comment = request.user.is_authenticated
+    comment_restriction_message = ''
+
+    if physician_only_comments and not is_physician_user(request.user):
+        can_comment = False
+        comment_restriction_message = 'Only physicians can comment in the Chat with a Physician area.'
+
     if request.method == 'POST':
+        if not can_comment:
+            messages.error(request, comment_restriction_message or 'You are not allowed to comment on this post.')
+            return redirect(f"{post.get_absolute_url()}?category={category}")
+
         content = request.POST.get('content', '').strip()
         if content:
             author_name = request.user.get_full_name() or request.user.get_username()
@@ -240,7 +264,13 @@ def blog_detail(request, pk):
             Comment.objects.create(post=post, patient=patient, author_name=author_name, content=content)
             return redirect(f"{post.get_absolute_url()}?category={category}")
     comments = post.comments.all()
-    return render(request, 'patients/blog_detail.html', {'post': post, 'comments': comments, 'active_category': category})
+    return render(request, 'patients/blog_detail.html', {
+        'post': post,
+        'comments': comments,
+        'active_category': category,
+        'can_comment': can_comment,
+        'comment_restriction_message': comment_restriction_message,
+    })
 
 
 @login_required
