@@ -246,6 +246,7 @@ def researcher_patient_detail(request, pk):
 def blog_list(request):
     physician_user = is_physician_user(request.user)
     search_query = request.GET.get('q', '').strip()
+    selected_patient_filter = request.GET.get('approved_patient', '').strip()
     category_choices = list(BlogPost.CATEGORY_CHOICES)
     valid_categories = {value for value, _label in category_choices}
     category_labels = dict(category_choices)
@@ -292,6 +293,14 @@ def blog_list(request):
 
     if physician_user:
         approved_patients = list(get_patients_approved_for_physician(request.user))
+
+        if selected_patient_filter:
+            try:
+                selected_patient_id = int(selected_patient_filter)
+                approved_patients = [patient for patient in approved_patients if patient.id == selected_patient_id]
+            except ValueError:
+                selected_patient_filter = ''
+
         if search_query:
             query_lower = search_query.lower()
             filtered_patients = []
@@ -350,6 +359,7 @@ def blog_list(request):
         'physician_dialogues': physician_dialogues,
         'approved_patients': approved_patients,
         'search_query': search_query,
+        'selected_patient_filter': selected_patient_filter,
         'blog_categories': [
             {'value': value, 'label': label}
             for value, label in category_choices

@@ -67,9 +67,30 @@
             <p class="text-muted small mb-3">Only chats with your approved patients are shown. Select a patient username to open the conversation thread.</p>
 
             <form method="get" action="{% url 'patients:blog_list' %}" class="mb-3">
+                <label for="approved_patient" class="form-label small fw-semibold text-secondary">Approved patients</label>
+                <div class="input-group">
+                    <select id="approved_patient" name="approved_patient" class="form-select">
+                        <option value="">All approved patients</option>
+                        {% for patient in approved_patients %}
+                            <option value="{{ patient.id }}" {% if selected_patient_filter == patient.id|stringformat:'s' %}selected{% endif %}>
+                                {{ patient.user_profile.user.username }} - {{ patient.first_name }} {{ patient.last_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if search_query %}
+                        <input type="hidden" name="q" value="{{ search_query }}">
+                    {% endif %}
+                    <button class="btn btn-outline-secondary" type="submit">Choose</button>
+                </div>
+            </form>
+
+            <form method="get" action="{% url 'patients:blog_list' %}" class="mb-3">
                 <div class="input-group">
                     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                     <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search patient username...">
+                    {% if selected_patient_filter %}
+                        <input type="hidden" name="approved_patient" value="{{ selected_patient_filter }}">
+                    {% endif %}
                     <button class="btn btn-outline-secondary" type="submit">Search</button>
                 </div>
             </form>
