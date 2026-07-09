@@ -71,6 +71,19 @@ application = get_wsgi_application()
 - Visit `https://yourusername.pythonanywhere.com`
 - Open `/admin` and log in with your superuser
 
+## 7. Replace old records with local simulated data
+
+After pulling latest code on PythonAnywhere, clear old records and load the shared simulated dataset:
+
+```bash
+python manage.py migrate
+python manage.py flush --noinput
+python manage.py loaddata patients/fixtures/simulated_data.json
+python manage.py collectstatic --noinput
+```
+
+Then reload the web app from the PythonAnywhere **Web** tab.
+
 ## Notes
 
 - Do not upload local `.venv` or `venv`
