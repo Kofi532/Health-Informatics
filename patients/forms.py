@@ -170,9 +170,19 @@ class DiabetesAssessmentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['assessed_at'].initial = timezone.localtime().strftime('%Y-%m-%dT%H:%M')
+        # Keep assessment entry low-friction: patients can submit partial data.
+        for field in self.fields.values():
+            field.required = False
+            field.widget.attrs.pop('required', None)
+
+    def clean_assessment_type(self):
+        # Model field is non-null/non-blank, so store a safe default when omitted.
+        return self.cleaned_data.get('assessment_type') or DiabetesAssessment.TYPE_RISK
 
     def clean_assessed_at(self):
-        assessed_at = self.cleaned_data['assessed_at']
+        assessed_at = self.cleaned_data.get('assessed_at')
+        if not assessed_at:
+            return timezone.now()
         if timezone.is_naive(assessed_at):
             return timezone.make_aware(assessed_at, timezone.get_current_timezone())
         return assessed_at

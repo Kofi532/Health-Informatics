@@ -1,50 +1,140 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Doctor Dashboard - ASTA624 PROJECT{% endblock %}
+{% block title %}Doctor Dashboard - GlucoBridge{% endblock %}
 
 {% block extra_styles %}
 <style>
-  body { background: #f4f7fb; }
-  .page-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
-  .patient-card { padding: 1rem; border-radius: 8px; background: #f8fafc; border: 1px solid #e6eef6; }
-  .badge-alert { background: #fee2e2; color: #991b1b; padding: 0.3rem 0.6rem; border-radius: 999px; font-weight:700; }
+  body { 
+    background-color: #f8fafc; 
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  /* Main Container Dashboard Card */
+  .page-card { 
+    background: #ffffff; 
+    border-radius: 16px; 
+    padding: 2rem; 
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+  }
+
+  /* Patient Card Grid Item */
+  .patient-card { 
+    padding: 1.25rem; 
+    border-radius: 12px; 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .patient-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+  }
+
+  /* Critical Alert Count Badge */
+  .badge-alert { 
+    background: #fef2f2; 
+    color: #dc2626; 
+    padding: 0.4rem 0.8rem; 
+    border-radius: 30px; 
+    font-weight: 600; 
+    font-size: 0.85rem;
+    border: 1px solid #fee2e2;
+  }
+
+  /* Individual Log Alert Box */
+  .alert-log-box {
+    background: #fafafa;
+    border-left: 4px solid #ef4444; /* Left accent bar to pull the doctor's eye */
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .alert-log-box:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Meta Text Formatting */
+  .meta-text {
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+  
+  .meta-divider {
+    color: #cbd5e1;
+    margin: 0 0.5rem;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-  <div class="page-card">
-    <h1 class="h4">Doctor Dashboard – Patient Alerts</h1>
-    <p class="text-muted">Patients with alerts in the last 48 hours, sorted by alert count.</p>
+  <div class="page-card my-4">
+    <div class="mb-4">
+      <h1 class="h3 fw-bold tracking-tight text-slate-900 mb-1">Patient Alerts</h1>
+      <p class="text-muted mb-0">Patients with high risk alerts in the last 48 hours, prioritized by alert volume.</p>
+    </div>
 
     {% if profiles_with_counts %}
-      <div class="row g-3">
+      <div class="row g-4">
         {% for item in profiles_with_counts %}
-          <div class="col-md-6">
-            <div class="patient-card">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="fw-bold">{{ item.profile.user.get_full_name|default:item.profile.user.username }}</div>
-                <div class="badge-alert">{{ item.alert_count }} alert{{ item.alert_count|pluralize }}</div>
-              </div>
-              <div class="text-muted small mb-2">
-                <strong>Gestational age:</strong> {{ item.profile.gestational_age_weeks }} weeks |
-                <strong>Target fasting glucose:</strong> {{ item.profile.target_fasting_glucose }} mg/dL
-              </div>
-              {% for alert in item.alerts %}
-                <div class="mb-2 p-2 bg-white rounded border">
-                  <div class="small text-uppercase text-muted">{{ alert.get_alert_type_display }}</div>
-                  <div class="mt-1">Reading: <span class="fw-bold text-danger">{{ alert.glucose_log.glucose_level }} mg/dL</span> at <span class="fw-semibold">{{ alert.glucose_log.get_meal_context_display }}</span></div>
-                  <div class="small text-muted">{{ alert.created_at|date:"Y-m-d H:i" }}</div>
+          <div class="col-xl-6 col-lg-12">
+            <div class="patient-card d-flex flex-column h-100">
+              
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                  <h2 class="h5 fw-bold text-dark mb-1">
+                    {{ item.profile.user.get_full_name|default:item.profile.user.username }}
+                  </h2>
+                  <div class="meta-text">
+                    <span><strong>Gestational Age:</strong> {{ item.profile.gestational_age_weeks }} weeks</span>
+                    <span class="meta-divider">|</span>
+                    <span><strong>Target Fasting:</strong> &lt;{{ item.profile.target_fasting_glucose }} mg/dL</span>
+                  </div>
                 </div>
-              {% empty %}
-                <div class="text-muted">No alerts for this patient.</div>
-              {% endfor %}
+                <span class="badge-alert shadow-sm">
+                  {{ item.alert_count }} Alert{{ item.alert_count|pluralize }}
+                </span>
+              </div>
+              
+              <hr class="text-black-50 my-2 opacity-10">
+
+              <div class="mt-2 flex-grow-1">
+                {% for alert in item.alerts %}
+                  <div class="alert-log-box shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="badge bg-secondary-subtle text-secondary fw-bold text-uppercase px-2 py-1" style="font-size: 0.7rem; tracking-wide: 0.05em;">
+                        {{ alert.get_alert_type_display }}
+                      </span>
+                      <span class="small text-muted" style="font-size: 0.75rem;">
+                        {{ alert.created_at|date:"M d, H:i" }}
+                      </span>
+                    </div>
+                    
+                    <div class="text-dark py-1">
+                      Reading: <span class="fw-bold text-danger fs-5">{{ alert.glucose_log.glucose_level }}</span> <small class="text-muted">mg/dL</small> 
+                      <span class="text-muted small">at</span> 
+                      <span class="fw-semibold text-secondary-emphasis">{{ alert.glucose_log.get_meal_context_display }}</span>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="text-muted small py-2 italic">No specific alert logs found.</div>
+                {% endfor %}
+              </div>
+
             </div>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <div class="text-center text-muted py-4">No alerts in the last 48 hours. Great job!</div>
+      <div class="text-center py-5 my-3 border rounded-3 bg-light bg-gradient">
+        <div class="display-6 text-success mb-2">✓</div>
+        <h3 class="h5 fw-bold text-secondary">All clear!</h3>
+        <p class="text-muted mb-0">No patient alerts generated in the past 48 hours.</p>
+      </div>
     {% endif %}
   </div>
 {% endblock %}

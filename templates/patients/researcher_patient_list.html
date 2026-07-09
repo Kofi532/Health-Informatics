@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Researcher Patient List - ASTA624 PROJECT{% endblock %}
+{% block title %}Researcher Patient List - GlucoBridge{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -70,11 +70,11 @@
                 <td class="ps-4 py-4">
                   <div class="d-flex align-items-center gap-3">
                     <div class="avatar-placeholder rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.95rem;">
-                      {{ item.patient.first_name|slice:":1" }}{% if item.patient.last_name %}{{ item.patient.last_name|slice:":1" }}{% endif %}
+                      {{ item.patient_avatar }}
                     </div>
                     <div>
-                      <div class="fw-bold text-dark fs-6">{{ item.patient.first_name }} {{ item.patient.last_name }}</div>
-                      <span class="text-muted small d-block mt-0.5"><i class="bi bi-envelope me-1"></i>{{ item.patient.email|default:"—" }}</span>
+                      <div class="fw-bold text-dark fs-6">{{ item.patient_display_label }}</div>
+                      <span class="text-muted small d-block mt-0.5"><i class="bi bi-shield-lock me-1"></i>De-identified record</span>
                     </div>
                   </div>
                 </td>
@@ -82,7 +82,7 @@
                 <!-- Demographics Column -->
                 <td class="py-4 patient-meta-text">
                   <div class="mb-1">
-                    <span class="text-muted small">DOB:</span> <span class="fw-medium">{{ item.patient.date_of_birth|date:"Y-m-d"|default:"—" }}</span>
+                    <span class="text-muted small">Birth Year:</span> <span class="fw-medium">{{ item.patient_birth_year|default:"—" }}</span>
                   </div>
                   <div>
                     <span class="text-muted small">Gender:</span> <span class="badge bg-light text-dark border px-2 py-1">{{ item.patient.get_gender_display }}</span>

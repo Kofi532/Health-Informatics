@@ -36,6 +36,32 @@ def _export_cell(value):
     return value
 
 
+def _research_patient_key(patient_id):
+    secret = settings.SECRET_KEY.encode('utf-8')
+    digest = hmac.new(secret, str(patient_id).encode('utf-8'), hashlib.sha256).hexdigest()[:10]
+    return f"PT-{digest}"
+
+
+def _deidentify_text(value, replacements):
+    if value is None:
+        return None
+    text = str(value)
+    lowered = text.lower()
+    for source, target in replacements.items():
+        key = (source or '').strip()
+        if not key:
+            continue
+        key_lower = key.lower()
+        if key_lower not in lowered:
+            continue
+        text = text.replace(key, target)
+        text = text.replace(key.lower(), target)
+        text = text.replace(key.upper(), target)
+        text = text.replace(key.title(), target)
+        lowered = text.lower()
+    return text
+
+
 DIETICIAN_CATEGORY_VALUES = {
     BlogPost.CATEGORY_DIETICIAN,
     BlogPost.CATEGORY_NUTRITIONNIST,
@@ -277,6 +303,9 @@ def patient_detail(request, pk):
 
 @login_required
 def researcher_patient_list(request):
+    if get_user_role(request.user) != UserProfile.ROLE_RESEARCHER:
+        return HttpResponseForbidden('You do not have permission to view research records.')
+
     physician_user = is_physician_user(request.user)
     dietician_user = is_dietician_user(request.user)
     specialist_limited = physician_user or dietician_user
@@ -296,8 +325,34 @@ def researcher_patient_list(request):
         lab_results = [] if specialist_limited else list(patient.lab_results.order_by('-collected_at')[:3])
         assessments = list(patient.diabetes_assessments.order_by('-assessed_at')[:2])
         diagnosis_summary = None if specialist_limited else getattr(patient, 'diagnosis_summary', None)
+
+        patient_key = _research_patient_key(patient.pk)
+        display_label = f"Patient {patient_key}"
+        owner_profile = UserProfile.objects.filter(patient=patient).select_related('user').first()
+        replacements = {
+            patient.first_name: display_label,
+            patient.last_name: display_label,
+            f"{patient.first_name} {patient.last_name}".strip(): display_label,
+            patient.email: '[REDACTED_EMAIL]',
+            patient.phone_number: '[REDACTED_PHONE]',
+            patient.address: '[REDACTED_ADDRESS]',
+        }
+        if owner_profile is not None and owner_profile.user is not None:
+            replacements[owner_profile.user.username] = display_label
+
+        for post in blog_posts:
+            post.title = _deidentify_text(post.title, replacements)
+            post.body = _deidentify_text(post.body, replacements)
+
+        for comment in comments:
+            comment.content = _deidentify_text(comment.content, replacements)
+
         patient_content.append({
             'patient': patient,
+            'patient_key': patient_key,
+            'patient_display_label': display_label,
+            'patient_avatar': patient_key[-2:],
+            'patient_birth_year': patient.date_of_birth.year if patient.date_of_birth else None,
             'blog_posts': blog_posts,
             'comments': comments,
             'prescriptions': prescriptions,
@@ -313,6 +368,9 @@ def researcher_patient_list(request):
 
 @login_required
 def researcher_patient_detail(request, pk):
+    if get_user_role(request.user) != UserProfile.ROLE_RESEARCHER:
+        return HttpResponseForbidden('You do not have permission to view this research record.')
+
     patient = get_object_or_404(Patient, pk=pk)
     physician_user = is_physician_user(request.user)
     dietician_user = is_dietician_user(request.user)
@@ -349,23 +407,53 @@ def researcher_patient_detail(request, pk):
     if user_profile is not None:
         patient_profile = getattr(user_profile.user, 'patient_profile', None)
         if patient_profile is not None and not specialist_limited:
-            glucose_logs = list(patient_profile.glucose_logs.all()[:15])
-            predictions = list(patient_profile.predictions.all()[:10])
-            alerts = list(patient_profile.doctor_alerts.all()[:10])
-            medications = list(patient_profile.medications.all()[:10])
+            glucose_logs = list(patient_profile.glucose_logs.all())
+            predictions = list(patient_profile.predictions.all())
+            alerts = list(patient_profile.doctor_alerts.all())
+            medications = list(patient_profile.medications.all())
 
-        blog_posts = list(BlogPost.objects.filter(patient=patient, published=True).order_by('-published_at')[:10])
-        comments = list(Comment.objects.filter(patient=patient).select_related('post').order_by('-created_at')[:10])
+        blog_posts = list(BlogPost.objects.filter(patient=patient, published=True).order_by('-published_at'))
+        comments = list(Comment.objects.filter(patient=patient).select_related('post').order_by('-created_at'))
         if not specialist_limited:
-            prescriptions = list(Prescription.objects.filter(patient=patient).order_by('-created_at')[:10])
+            prescriptions = list(Prescription.objects.filter(patient=patient).order_by('-created_at'))
 
     if not specialist_limited:
-        lab_results = list(LabResult.objects.filter(patient=patient).order_by('-collected_at')[:10])
-    assessments = list(DiabetesAssessment.objects.filter(patient=patient).order_by('-assessed_at')[:10])
+        lab_results = list(LabResult.objects.filter(patient=patient).order_by('-collected_at'))
+    assessments = list(DiabetesAssessment.objects.filter(patient=patient).order_by('-assessed_at'))
 
     if not specialist_limited:
         for encounter in patient.encounters.all():
             vital_signs.extend(list(encounter.vital_signs.all()))
+
+    patient_key = _research_patient_key(patient.pk)
+    patient_display_label = f"Patient {patient_key}"
+    replacements = {
+        patient.first_name: patient_display_label,
+        patient.last_name: patient_display_label,
+        f"{patient.first_name} {patient.last_name}".strip(): patient_display_label,
+        patient.email: '[REDACTED_EMAIL]',
+        patient.phone_number: '[REDACTED_PHONE]',
+        patient.address: '[REDACTED_ADDRESS]',
+    }
+    if user_profile is not None and user_profile.user is not None:
+        replacements[user_profile.user.username] = patient_display_label
+
+    for post in blog_posts:
+        post.title = _deidentify_text(post.title, replacements)
+        post.body = _deidentify_text(post.body, replacements)
+
+    for comment in comments:
+        comment.content = _deidentify_text(comment.content, replacements)
+
+    for prescription in prescriptions:
+        prescription.title = _deidentify_text(prescription.title, replacements)
+        prescription.content = _deidentify_text(prescription.content, replacements)
+
+    for lab in lab_results:
+        lab.notes = _deidentify_text(lab.notes, replacements)
+
+    if diagnosis_summary is not None:
+        diagnosis_summary.reason = _deidentify_text(diagnosis_summary.reason, replacements)
 
     recent_logs = [log for log in glucose_logs if log.timestamp >= timezone.now() - timedelta(days=7)]
     average_glucose = None
@@ -374,6 +462,9 @@ def researcher_patient_detail(request, pk):
 
     return render(request, 'patients/researcher_patient_detail.html', {
         'patient': patient,
+        'patient_key': patient_key,
+        'patient_display_label': patient_display_label,
+        'patient_birth_year': patient.date_of_birth.year if patient.date_of_birth else None,
         'user_profile': user_profile,
         'patient_profile': patient_profile,
         'glucose_logs': glucose_logs,
@@ -394,6 +485,9 @@ def researcher_patient_detail(request, pk):
 
 @login_required
 def blog_list(request):
+    if get_user_role(request.user) == UserProfile.ROLE_RESEARCHER:
+        return HttpResponseForbidden('Researchers do not have access to the blog portal.')
+
     physician_user = is_physician_user(request.user)
     dietician_user = is_dietician_user(request.user)
     clinical_user = physician_user or dietician_user
@@ -534,6 +628,9 @@ def blog_list(request):
 
 @login_required
 def blog_detail(request, pk):
+    if get_user_role(request.user) == UserProfile.ROLE_RESEARCHER:
+        return HttpResponseForbidden('Researchers do not have access to the blog portal.')
+
     post = get_object_or_404(BlogPost, pk=pk, published=True)
     physician_user = is_physician_user(request.user)
     dietician_user = is_dietician_user(request.user)
@@ -564,8 +661,16 @@ def blog_detail(request, pk):
     dietician_only_comments = post.category in DIETICIAN_CATEGORY_VALUES
     can_comment = request.user.is_authenticated
     comment_restriction_message = ''
+    viewer_profile = UserProfile.objects.filter(user=request.user).only('patient').first()
+    is_post_owner_patient = bool(
+        post.patient_id
+        and viewer_profile is not None
+        and viewer_profile.patient_id == post.patient_id
+    )
 
-    if is_physician_user(request.user) and post.category != BlogPost.CATEGORY_PHYSICIAN:
+    if is_post_owner_patient:
+        can_comment = True
+    elif is_physician_user(request.user) and post.category != BlogPost.CATEGORY_PHYSICIAN:
         can_comment = False
         comment_restriction_message = 'Physicians can only comment on posts in Chat with a Physician.'
     elif is_dietician_user(request.user) and post.category not in DIETICIAN_CATEGORY_VALUES:
@@ -601,11 +706,52 @@ def blog_detail(request, pk):
 
         content = request.POST.get('content', '').strip()
         if content:
-            author_name = request.user.get_full_name() or request.user.get_username()
+            role_labels = {
+                UserProfile.ROLE_PATIENT: 'Patient',
+                UserProfile.ROLE_PHYSICIAN: 'Physician',
+                UserProfile.ROLE_DIETICIAN: 'Nutritionist',
+                UserProfile.ROLE_RESEARCHER: 'Researcher',
+            }
+            user_role = get_user_role(request.user)
+            role_label = role_labels.get(user_role, 'User')
+            author_name = f"{request.user.get_username()} ({role_label})"
             patient = get_patient_for_user(request.user)
             Comment.objects.create(post=post, patient=patient, author_name=author_name, content=content)
             return redirect(f"{post.get_absolute_url()}?category={category}")
-    comments = post.comments.all()
+
+    role_labels = {
+        UserProfile.ROLE_PATIENT: 'Patient',
+        UserProfile.ROLE_PHYSICIAN: 'Physician',
+        UserProfile.ROLE_DIETICIAN: 'Nutritionist',
+        UserProfile.ROLE_RESEARCHER: 'Researcher',
+    }
+
+    comments = list(post.comments.all())
+    for comment in comments:
+        base_author = (comment.author_name or 'Anonymous Contributor').strip()
+        if '(' in base_author and ')' in base_author:
+            comment.display_author_name = base_author
+            continue
+
+        role_label = None
+        if comment.patient_id is not None:
+            role_label = 'Patient'
+        else:
+            matched_user = User.objects.filter(username=base_author).first()
+            if matched_user is None:
+                matched_user = User.objects.filter(
+                    first_name__isnull=False,
+                    last_name__isnull=False,
+                ).filter(
+                    first_name__iexact=base_author.split(' ')[0] if ' ' in base_author else '',
+                    last_name__iexact=' '.join(base_author.split(' ')[1:]) if ' ' in base_author else '',
+                ).first()
+            if matched_user is not None:
+                matched_role = get_user_role(matched_user)
+                role_label = role_labels.get(matched_role)
+
+        comment.display_author_name = f"{base_author} ({role_label})" if role_label else base_author
+
     return render(request, 'patients/blog_detail.html', {
         'post': post,
         'comments': comments,
@@ -1176,261 +1322,468 @@ def export_deidentified_csv(request):
 
 @login_required
 def export_research_excel(request):
-    """Export researcher dashboard data in an Excel workbook with a column meanings sheet."""
+    """Export de-identified researcher data as normalized analysis tables.
+
+    Optional query param:
+      - patient=<patient_id> to export one patient only.
+    """
     if get_user_role(request.user) != UserProfile.ROLE_RESEARCHER:
         return HttpResponseForbidden('You do not have permission to export this dataset.')
 
-    patients = Patient.objects.all().order_by('last_name', 'first_name')
+    selected_patient_id = request.GET.get('patient', '').strip()
+    patient_qs = Patient.objects.all().order_by('last_name', 'first_name')
+    if selected_patient_id:
+        patient_qs = patient_qs.filter(pk=selected_patient_id)
+        if not patient_qs.exists():
+            return HttpResponseForbidden('Requested patient was not found for export.')
 
-    # Build dynamic lab headers so each lab variable gets dedicated columns.
-    lab_name_map = {}
-    for lab_name in LabResult.objects.values_list('test_name', flat=True).distinct():
-        if not lab_name:
-            continue
-        key = slugify(lab_name).replace('-', '_')
-        if key and key not in lab_name_map:
-            lab_name_map[key] = lab_name
-
-    headers = [
-        'patient_id',
-        'first_name',
-        'last_name',
-        'date_of_birth',
-        'gender',
-        'email',
-        'phone_number',
-        'diagnosis_status',
-        'diagnosis_confirmation',
-        'diagnosis_reason',
-        'latest_assessment_type',
-        'latest_assessment_diabetes_type',
-        'latest_fasting_glucose',
-        'latest_post_meal_glucose',
-        'latest_hba1c',
-        'latest_classic_symptoms',
-        'latest_insulin_use',
-        'latest_oral_medication_use',
-        'latest_medication_timing',
-        'latest_current_medications',
-        'latest_weight_kg',
-        'latest_height_cm',
-        'latest_bmi',
-        'latest_waist_cm',
-        'latest_medical_history',
-        'latest_dietary_habits',
-        'latest_lifestyle_factors',
-        'latest_readiness_to_change',
-    ]
-
-    for key in sorted(lab_name_map.keys()):
-        headers.extend([
-            f'lab_{key}_value',
-            f'lab_{key}_unit',
-            f'lab_{key}_reference_range',
-            f'lab_{key}_collected_at',
-            f'lab_{key}_notes',
-        ])
-
-    max_sector_rows = 5
-    for i in range(1, max_sector_rows + 1):
-        headers.extend([
-            f'prescription_{i}_title',
-            f'prescription_{i}_content',
-            f'prescription_{i}_created_at',
-        ])
-
-    for i in range(1, max_sector_rows + 1):
-        headers.extend([
-            f'blog_{i}_title',
-            f'blog_{i}_category',
-            f'blog_{i}_body',
-            f'blog_{i}_published_at',
-        ])
-
-    for i in range(1, max_sector_rows + 1):
-        headers.extend([
-            f'comment_{i}_post_title',
-            f'comment_{i}_post_category',
-            f'comment_{i}_content',
-            f'comment_{i}_created_at',
-        ])
-
-    header_meanings = {
-        'patient_id': 'Internal patient record identifier.',
-        'first_name': 'Patient first name.',
-        'last_name': 'Patient last name.',
-        'date_of_birth': 'Patient date of birth.',
-        'gender': 'Patient recorded gender.',
-        'email': 'Patient email address.',
-        'phone_number': 'Patient phone number.',
-        'diagnosis_status': 'Computed diabetes screening status from the rules engine.',
-        'diagnosis_confirmation': 'Whether the computed diagnosis is confirmed, provisional, or not applicable.',
-        'diagnosis_reason': 'Human-readable explanation for the computed diagnosis status.',
-        'latest_assessment_type': 'Most recent assessment category entered for the patient.',
-        'latest_assessment_diabetes_type': 'Most recent diabetes type selected in assessment.',
-        'latest_fasting_glucose': 'Most recent fasting glucose entered in assessment.',
-        'latest_post_meal_glucose': 'Most recent post-meal glucose entered in assessment.',
-        'latest_hba1c': 'Most recent HbA1c entered in assessment.',
-        'latest_classic_symptoms': 'Whether classic hyperglycemia symptoms were marked in the latest assessment.',
-        'latest_insulin_use': 'Whether insulin use was marked in the latest assessment.',
-        'latest_oral_medication_use': 'Whether oral diabetes medication use was marked in the latest assessment.',
-        'latest_medication_timing': 'Timing of medications relative to meals from the latest assessment.',
-        'latest_current_medications': 'Current medications entered in the latest assessment.',
-        'latest_weight_kg': 'Latest recorded weight in kilograms.',
-        'latest_height_cm': 'Latest recorded height in centimeters.',
-        'latest_bmi': 'Latest recorded body mass index.',
-        'latest_waist_cm': 'Latest recorded waist circumference in centimeters.',
-        'latest_medical_history': 'Medical history entered in the latest assessment.',
-        'latest_dietary_habits': 'Dietary habits entered in the latest assessment.',
-        'latest_lifestyle_factors': 'Lifestyle factors entered in the latest assessment.',
-        'latest_readiness_to_change': 'Readiness to change lifestyle entered in the latest assessment.',
-    }
-
-    for key, original_name in lab_name_map.items():
-        header_meanings[f'lab_{key}_value'] = f'Latest value for lab test "{original_name}".'
-        header_meanings[f'lab_{key}_unit'] = f'Unit for lab test "{original_name}".'
-        header_meanings[f'lab_{key}_reference_range'] = f'Reference range for lab test "{original_name}".'
-        header_meanings[f'lab_{key}_collected_at'] = f'Collection timestamp for lab test "{original_name}".'
-        header_meanings[f'lab_{key}_notes'] = f'Notes for lab test "{original_name}".'
-
-    for i in range(1, max_sector_rows + 1):
-        header_meanings[f'prescription_{i}_title'] = f'Prescription {i} title, ordered from most recent to older records.'
-        header_meanings[f'prescription_{i}_content'] = f'Prescription {i} content, ordered from most recent to older records.'
-        header_meanings[f'prescription_{i}_created_at'] = f'Prescription {i} creation timestamp.'
-
-    for i in range(1, max_sector_rows + 1):
-        header_meanings[f'blog_{i}_title'] = f'Blog post {i} title, ordered from most recent to older records.'
-        header_meanings[f'blog_{i}_category'] = f'Blog post {i} subgroup/category.'
-        header_meanings[f'blog_{i}_body'] = f'Blog post {i} content/body.'
-        header_meanings[f'blog_{i}_published_at'] = f'Blog post {i} publication timestamp.'
-
-    for i in range(1, max_sector_rows + 1):
-        header_meanings[f'comment_{i}_post_title'] = f'Comment {i} linked post title, ordered from most recent to older records.'
-        header_meanings[f'comment_{i}_post_category'] = f'Comment {i} linked post subgroup/category.'
-        header_meanings[f'comment_{i}_content'] = f'Comment {i} content/body.'
-        header_meanings[f'comment_{i}_created_at'] = f'Comment {i} creation timestamp.'
-
-    wb = Workbook()
-    data_ws = wb.active
-    data_ws.title = 'Research Data'
-    meanings_ws = wb.create_sheet('Column Meanings')
+    patients = list(patient_qs)
+    patient_ids = [patient.pk for patient in patients]
 
     header_fill = PatternFill(fill_type='solid', fgColor='1D4ED8')
     header_font = Font(color='FFFFFF', bold=True)
 
-    data_ws.append(headers)
-    for cell in data_ws[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = cell.alignment.copy(wrap_text=True)
+    secret = settings.SECRET_KEY.encode('utf-8')
 
-    meanings_ws.append(['column_name', 'meaning'])
-    for cell in meanings_ws[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-    meanings_ws.freeze_panes = 'A2'
+    def _style_header(ws):
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+        ws.freeze_panes = 'A2'
 
+    def _autosize(ws, max_width=50):
+        for column_cells in ws.columns:
+            max_length = 0
+            col = column_cells[0].column_letter
+            for cell in column_cells:
+                value = '' if cell.value is None else str(cell.value)
+                max_length = max(max_length, len(value))
+                cell.alignment = cell.alignment.copy(wrap_text=True, vertical='top')
+            ws.column_dimensions[col].width = min(max_length + 2, max_width)
+
+    def _clean(value):
+        if value is None:
+            return None
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    def _iso(value):
+        return value.isoformat() if value is not None else None
+
+    def _hash_token(prefix, raw_value):
+        digest = hmac.new(secret, str(raw_value).encode('utf-8'), hashlib.sha256).hexdigest()[:12]
+        return f"{prefix}_{digest}"
+
+    role_labels = {
+        UserProfile.ROLE_PATIENT: 'Patient',
+        UserProfile.ROLE_PHYSICIAN: 'Physician',
+        UserProfile.ROLE_DIETICIAN: 'Nutritionist',
+        UserProfile.ROLE_RESEARCHER: 'Researcher',
+    }
+
+    patient_token = {patient.pk: _hash_token('PT', patient.pk) for patient in patients}
+
+    # Build replacements for obvious in-text identifiers in narrative fields.
+    text_replacements = {}
+    users = User.objects.filter(userprofile__patient_id__in=patient_ids).distinct()
+    for user in users:
+        linked_patient_id = getattr(getattr(user, 'userprofile', None), 'patient_id', None)
+        if linked_patient_id and linked_patient_id in patient_token:
+            token = patient_token[linked_patient_id]
+            text_replacements[user.username.lower()] = token
+            full_name = f"{user.first_name} {user.last_name}".strip()
+            if full_name:
+                text_replacements[full_name.lower()] = token
+            if user.first_name:
+                text_replacements[user.first_name.lower()] = token
+            if user.last_name:
+                text_replacements[user.last_name.lower()] = token
+
+    specialist_users = User.objects.filter(userprofile__role__in=[UserProfile.ROLE_PHYSICIAN, UserProfile.ROLE_DIETICIAN]).distinct()
+    for user in specialist_users:
+        role_label = role_labels.get(get_user_role(user), 'Specialist')
+        label = f"[{role_label}]"
+        text_replacements[user.username.lower()] = label
+        full_name = f"{user.first_name} {user.last_name}".strip()
+        if full_name:
+            text_replacements[full_name.lower()] = label
+
+    def _sanitize_text(value):
+        text = _clean(value)
+        if text is None:
+            return None
+        lowered = text.lower()
+        for needle, replacement in text_replacements.items():
+            if needle and needle in lowered:
+                text = text.replace(needle, replacement)
+                text = text.replace(needle.title(), replacement)
+                text = text.replace(needle.upper(), replacement)
+                text = text.replace(needle.capitalize(), replacement)
+                lowered = text.lower()
+        return text
+
+    wb = Workbook()
+
+    readme = wb.active
+    readme.title = 'README'
+    readme.append(['item', 'value'])
+    _style_header(readme)
+    readme_rows = [
+        ('export_generated_at', timezone.now().isoformat()),
+        ('export_scope', 'all_patients' if not selected_patient_id else f'single_patient_{selected_patient_id}'),
+        ('schema_style', 'normalized_long_tables'),
+        ('join_key_primary', 'patient_key'),
+        ('join_key_profile', 'patient_profile_key'),
+        ('deidentification', 'Direct identifiers removed; keys are irreversible HMAC tokens.'),
+        ('note', 'Missing values are blank/null; no N/A placeholders are used.'),
+    ]
+    for row in readme_rows:
+        readme.append(list(row))
+
+    sheet_headers = {}
+
+    patients_ws = wb.create_sheet('patients')
+    patients_headers = [
+        'patient_key', 'birth_year', 'age_years_estimate', 'gender_code', 'gender_label',
+        'created_at', 'updated_at', 'diagnosis_status_code', 'diagnosis_status_label',
+        'diagnosis_confirmation_code', 'diagnosis_confirmation_label', 'diagnosis_reason_sanitized',
+        'diagnosis_fpg', 'diagnosis_hba1c', 'diagnosis_rpg', 'diagnosis_has_classic_symptoms',
+        'diagnosis_evaluated_at',
+    ]
+    patients_ws.append(patients_headers)
+    _style_header(patients_ws)
+    sheet_headers['patients'] = patients_headers
+    today = timezone.now().date()
     for patient in patients:
         diagnosis = getattr(patient, 'diagnosis_summary', None)
-        latest_assessment = patient.diabetes_assessments.order_by('-assessed_at').first()
-        prescriptions = list(patient.prescriptions.order_by('-created_at')[:max_sector_rows])
-        posts = list(patient.blog_posts.filter(published=True).order_by('-published_at')[:max_sector_rows])
-        comments = list(patient.comments.select_related('post').order_by('-created_at')[:max_sector_rows])
+        birth_year = patient.date_of_birth.year if patient.date_of_birth else None
+        age_estimate = None
+        if patient.date_of_birth:
+            age_estimate = today.year - patient.date_of_birth.year
+            if (today.month, today.day) < (patient.date_of_birth.month, patient.date_of_birth.day):
+                age_estimate -= 1
+        patients_ws.append([
+            patient_token.get(patient.pk),
+            birth_year,
+            age_estimate,
+            _clean(patient.gender),
+            _clean(patient.get_gender_display()),
+            _iso(patient.created_at),
+            _iso(patient.updated_at),
+            _clean(diagnosis.status if diagnosis else None),
+            _clean(diagnosis.get_status_display() if diagnosis else None),
+            _clean(diagnosis.confirmation_status if diagnosis else None),
+            _clean(diagnosis.get_confirmation_status_display() if diagnosis else None),
+            _sanitize_text(diagnosis.reason if diagnosis else None),
+            _clean(diagnosis.fasting_plasma_glucose if diagnosis else None),
+            _clean(diagnosis.hba1c if diagnosis else None),
+            _clean(diagnosis.random_plasma_glucose if diagnosis else None),
+            _clean(diagnosis.has_classic_symptoms if diagnosis else None),
+            _iso(diagnosis.evaluated_at if diagnosis else None),
+        ])
 
-        row = {h: 'N/A' for h in headers}
-        row['patient_id'] = patient.pk
-        row['first_name'] = _export_cell(patient.first_name)
-        row['last_name'] = _export_cell(patient.last_name)
-        row['date_of_birth'] = _export_cell(patient.date_of_birth)
-        row['gender'] = _export_cell(patient.get_gender_display())
-        row['email'] = _export_cell(patient.email)
-        row['phone_number'] = _export_cell(patient.phone_number)
+    profiles_ws = wb.create_sheet('patient_profiles')
+    profiles_headers = [
+        'patient_profile_key', 'patient_key', 'gestational_age_weeks', 'target_fasting_glucose',
+        'allow_all_physicians', 'allow_all_dieticians', 'created_at',
+    ]
+    profiles_ws.append(profiles_headers)
+    _style_header(profiles_ws)
+    sheet_headers['patient_profiles'] = profiles_headers
 
-        if diagnosis:
-            row['diagnosis_status'] = _export_cell(diagnosis.get_status_display())
-            row['diagnosis_confirmation'] = _export_cell(diagnosis.get_confirmation_status_display())
-            row['diagnosis_reason'] = _export_cell(diagnosis.reason)
+    patient_profile_qs = PatientProfile.objects.filter(
+        user__userprofile__patient_id__in=patient_ids
+    ).select_related('user', 'user__userprofile')
+    profile_token = {}
+    profile_to_patient_token = {}
+    for profile in patient_profile_qs:
+        user_profile = getattr(profile.user, 'userprofile', None)
+        patient_id = getattr(user_profile, 'patient_id', None)
+        if not patient_id or patient_id not in patient_token:
+            continue
+        pkey = _hash_token('PP', profile.pk)
+        profile_token[profile.pk] = pkey
+        profile_to_patient_token[profile.pk] = patient_token[patient_id]
+        profiles_ws.append([
+            pkey,
+            patient_token[patient_id],
+            _clean(profile.gestational_age_weeks),
+            _clean(profile.target_fasting_glucose),
+            _clean(profile.allow_all_physicians),
+            _clean(profile.allow_all_dieticians),
+            _iso(profile.created_at),
+        ])
 
-        if latest_assessment:
-            row['latest_assessment_type'] = _export_cell(latest_assessment.get_assessment_type_display())
-            row['latest_assessment_diabetes_type'] = _export_cell(latest_assessment.get_diabetes_type_display() if latest_assessment.diabetes_type else None)
-            row['latest_fasting_glucose'] = _export_cell(latest_assessment.fasting_glucose)
-            row['latest_post_meal_glucose'] = _export_cell(latest_assessment.post_meal_glucose)
-            row['latest_hba1c'] = _export_cell(latest_assessment.hba1c)
-            if latest_assessment.classic_hyperglycemia_symptoms is not None:
-                row['latest_classic_symptoms'] = 'Yes' if latest_assessment.classic_hyperglycemia_symptoms else 'No'
-            if latest_assessment.insulin_use is not None:
-                row['latest_insulin_use'] = 'Yes' if latest_assessment.insulin_use else 'No'
-            if latest_assessment.oral_medication_use is not None:
-                row['latest_oral_medication_use'] = 'Yes' if latest_assessment.oral_medication_use else 'No'
-            row['latest_medication_timing'] = _export_cell(latest_assessment.medication_timing)
-            row['latest_current_medications'] = _export_cell(latest_assessment.current_medications)
-            row['latest_weight_kg'] = _export_cell(latest_assessment.weight_kg)
-            row['latest_height_cm'] = _export_cell(latest_assessment.height_cm)
-            row['latest_bmi'] = _export_cell(latest_assessment.bmi)
-            row['latest_waist_cm'] = _export_cell(latest_assessment.waist_circumference_cm)
-            row['latest_medical_history'] = _export_cell(latest_assessment.medical_history)
-            row['latest_dietary_habits'] = _export_cell(latest_assessment.dietary_habits)
-            row['latest_lifestyle_factors'] = _export_cell(latest_assessment.lifestyle_factors)
-            row['latest_readiness_to_change'] = _export_cell(latest_assessment.get_readiness_to_change_display() if latest_assessment.readiness_to_change else None)
+    profile_ids = list(profile_token.keys())
 
-        latest_labs_by_key = {}
-        for lab in patient.lab_results.order_by('-collected_at', '-created_at'):
-            key = slugify(lab.test_name).replace('-', '_') if lab.test_name else ''
-            if key and key in lab_name_map and key not in latest_labs_by_key:
-                latest_labs_by_key[key] = lab
+    assessments_ws = wb.create_sheet('assessments')
+    assessments_headers = [
+        'assessment_key', 'patient_key', 'assessment_type_code', 'assessment_type_label',
+        'diabetes_type_code', 'diabetes_type_label', 'fasting_glucose', 'post_meal_glucose',
+        'hba1c', 'classic_hyperglycemia_symptoms', 'insulin_use', 'oral_medication_use',
+        'medication_timing_sanitized', 'current_medications_sanitized', 'weight_kg', 'height_cm',
+        'bmi', 'waist_circumference_cm', 'medical_history_sanitized', 'family_history_diabetes',
+        'high_bp_history', 'high_cholesterol_history', 'gestational_diabetes_history', 'pcos_history',
+        'dietary_habits_sanitized', 'eating_habits_sanitized', 'nutrition_assessment_sanitized',
+        'food_allergies_or_intolerance_sanitized', 'food_affordability_and_preparation_sanitized',
+        'food_preference_and_culture_sanitized', 'physical_activity_level_code',
+        'physical_activity_level_label', 'lifestyle_factors_sanitized', 'sleep_quality_sanitized',
+        'stress_level_sanitized', 'alcohol_intake_sanitized', 'smoking_status_sanitized',
+        'work_schedule_sanitized', 'occupation_sanitized', 'laboratory_results_summary_sanitized',
+        'readiness_to_change_code', 'readiness_to_change_label', 'assessed_at', 'created_at', 'updated_at',
+    ]
+    assessments_ws.append(assessments_headers)
+    _style_header(assessments_ws)
+    sheet_headers['assessments'] = assessments_headers
 
-        for key in sorted(lab_name_map.keys()):
-            lab = latest_labs_by_key.get(key)
-            if not lab:
-                continue
-            row[f'lab_{key}_value'] = _export_cell(lab.result_value)
-            row[f'lab_{key}_unit'] = _export_cell(lab.unit)
-            row[f'lab_{key}_reference_range'] = _export_cell(lab.reference_range)
-            row[f'lab_{key}_collected_at'] = _export_cell(lab.collected_at.isoformat() if lab.collected_at else None)
-            row[f'lab_{key}_notes'] = _export_cell(lab.notes)
+    for a in DiabetesAssessment.objects.filter(patient_id__in=patient_ids).order_by('patient_id', '-assessed_at'):
+        assessments_ws.append([
+            _hash_token('AS', a.pk),
+            patient_token.get(a.patient_id),
+            _clean(a.assessment_type),
+            _clean(a.get_assessment_type_display() if a.assessment_type else None),
+            _clean(a.diabetes_type),
+            _clean(a.get_diabetes_type_display() if a.diabetes_type else None),
+            _clean(a.fasting_glucose),
+            _clean(a.post_meal_glucose),
+            _clean(a.hba1c),
+            _clean(a.classic_hyperglycemia_symptoms),
+            _clean(a.insulin_use),
+            _clean(a.oral_medication_use),
+            _sanitize_text(a.medication_timing),
+            _sanitize_text(a.current_medications),
+            _clean(a.weight_kg),
+            _clean(a.height_cm),
+            _clean(a.bmi),
+            _clean(a.waist_circumference_cm),
+            _sanitize_text(a.medical_history),
+            _clean(a.family_history_diabetes),
+            _clean(a.high_bp_history),
+            _clean(a.high_cholesterol_history),
+            _clean(a.gestational_diabetes_history),
+            _clean(a.pcos_history),
+            _sanitize_text(a.dietary_habits),
+            _sanitize_text(a.eating_habits),
+            _sanitize_text(a.nutrition_assessment),
+            _sanitize_text(a.food_allergies_or_intolerance),
+            _sanitize_text(a.food_affordability_and_preparation),
+            _sanitize_text(a.food_preference_and_culture),
+            _clean(a.physical_activity_level),
+            _clean(a.get_physical_activity_level_display() if a.physical_activity_level else None),
+            _sanitize_text(a.lifestyle_factors),
+            _sanitize_text(a.sleep_quality),
+            _sanitize_text(a.stress_level),
+            _sanitize_text(a.alcohol_intake),
+            _sanitize_text(a.smoking_status),
+            _sanitize_text(a.work_schedule),
+            _sanitize_text(a.occupation),
+            _sanitize_text(a.laboratory_results_summary),
+            _clean(a.readiness_to_change),
+            _clean(a.get_readiness_to_change_display() if a.readiness_to_change else None),
+            _iso(a.assessed_at),
+            _iso(a.created_at),
+            _iso(a.updated_at),
+        ])
 
-        for i, pres in enumerate(prescriptions, start=1):
-            row[f'prescription_{i}_title'] = _export_cell(pres.title)
-            row[f'prescription_{i}_content'] = _export_cell(pres.content)
-            row[f'prescription_{i}_created_at'] = _export_cell(pres.created_at.isoformat() if pres.created_at else None)
+    labs_ws = wb.create_sheet('lab_results')
+    labs_headers = [
+        'lab_result_key', 'patient_key', 'test_name', 'result_value', 'unit', 'reference_range',
+        'collected_at', 'notes_sanitized', 'created_at', 'updated_at',
+    ]
+    labs_ws.append(labs_headers)
+    _style_header(labs_ws)
+    sheet_headers['lab_results'] = labs_headers
+    for lab in LabResult.objects.filter(patient_id__in=patient_ids).order_by('patient_id', '-collected_at'):
+        labs_ws.append([
+            _hash_token('LB', lab.pk),
+            patient_token.get(lab.patient_id),
+            _clean(lab.test_name),
+            _clean(lab.result_value),
+            _clean(lab.unit),
+            _clean(lab.reference_range),
+            _iso(lab.collected_at),
+            _sanitize_text(lab.notes),
+            _iso(lab.created_at),
+            _iso(lab.updated_at),
+        ])
 
-        for i, post in enumerate(posts, start=1):
-            row[f'blog_{i}_title'] = _export_cell(post.title)
-            row[f'blog_{i}_category'] = _export_cell(post.get_category_display())
-            row[f'blog_{i}_body'] = _export_cell(post.body)
-            row[f'blog_{i}_published_at'] = _export_cell(post.published_at.isoformat() if post.published_at else None)
+    prescriptions_ws = wb.create_sheet('prescriptions')
+    prescriptions_headers = [
+        'prescription_key', 'patient_key', 'title_sanitized', 'content_sanitized',
+        'prescribed_by_role', 'created_at', 'updated_at',
+    ]
+    prescriptions_ws.append(prescriptions_headers)
+    _style_header(prescriptions_ws)
+    sheet_headers['prescriptions'] = prescriptions_headers
+    for p in Prescription.objects.filter(patient_id__in=patient_ids).select_related('prescribed_by').order_by('patient_id', '-created_at'):
+        prescribed_role = None
+        if p.prescribed_by is not None:
+            prescribed_role = role_labels.get(get_user_role(p.prescribed_by), 'User')
+        prescriptions_ws.append([
+            _hash_token('RX', p.pk),
+            patient_token.get(p.patient_id),
+            _sanitize_text(p.title),
+            _sanitize_text(p.content),
+            prescribed_role,
+            _iso(p.created_at),
+            _iso(p.updated_at),
+        ])
 
-        for i, comment in enumerate(comments, start=1):
-            row[f'comment_{i}_post_title'] = _export_cell(comment.post.title)
-            row[f'comment_{i}_post_category'] = _export_cell(comment.post.get_category_display())
-            row[f'comment_{i}_content'] = _export_cell(comment.content)
-            row[f'comment_{i}_created_at'] = _export_cell(comment.created_at.isoformat() if comment.created_at else None)
+    posts_ws = wb.create_sheet('blog_posts')
+    posts_headers = [
+        'blog_post_key', 'patient_key', 'category_code', 'category_label', 'title_sanitized',
+        'slug_token', 'body_sanitized', 'published', 'published_at',
+    ]
+    posts_ws.append(posts_headers)
+    _style_header(posts_ws)
+    sheet_headers['blog_posts'] = posts_headers
+    for post in BlogPost.objects.filter(patient_id__in=patient_ids).order_by('patient_id', '-published_at'):
+        posts_ws.append([
+            _hash_token('BP', post.pk),
+            patient_token.get(post.patient_id),
+            _clean(post.category),
+            _clean(post.get_category_display()),
+            _sanitize_text(post.title),
+            _hash_token('SL', post.slug),
+            _sanitize_text(post.body),
+            _clean(post.published),
+            _iso(post.published_at),
+        ])
 
-        data_ws.append([row[h] for h in headers])
+    comments_ws = wb.create_sheet('blog_comments')
+    comments_headers = [
+        'comment_key', 'patient_key', 'post_key', 'post_category_code', 'post_category_label',
+        'author_role', 'content_sanitized', 'created_at',
+    ]
+    comments_ws.append(comments_headers)
+    _style_header(comments_ws)
+    sheet_headers['blog_comments'] = comments_headers
+    for c in Comment.objects.filter(patient_id__in=patient_ids).select_related('post').order_by('patient_id', '-created_at'):
+        post = c.post
+        author_role = 'Patient' if c.patient_id is not None else 'Specialist'
+        comments_ws.append([
+            _hash_token('CM', c.pk),
+            patient_token.get(c.patient_id),
+            _hash_token('BP', post.pk) if post else None,
+            _clean(post.category if post else None),
+            _clean(post.get_category_display() if post else None),
+            author_role,
+            _sanitize_text(c.content),
+            _iso(c.created_at),
+        ])
 
-    for column_cells in data_ws.columns:
-        max_length = 0
-        column_letter = column_cells[0].column_letter
-        for cell in column_cells:
-            cell.alignment = cell.alignment.copy(wrap_text=True, vertical='top')
-            try:
-                cell_length = len(str(cell.value)) if cell.value is not None else 0
-                max_length = max(max_length, cell_length)
-            except Exception:
-                pass
-        data_ws.column_dimensions[column_letter].width = min(max_length + 2, 35)
+    glucose_ws = wb.create_sheet('glucose_logs')
+    glucose_headers = [
+        'glucose_log_key', 'patient_profile_key', 'patient_key', 'timestamp', 'glucose_level_mg_dl',
+        'meal_context_code', 'meal_context_label', 'created_at',
+    ]
+    glucose_ws.append(glucose_headers)
+    _style_header(glucose_ws)
+    sheet_headers['glucose_logs'] = glucose_headers
+    if profile_ids:
+        for log in GlucoseLog.objects.filter(profile_id__in=profile_ids).order_by('profile_id', '-timestamp'):
+            glucose_ws.append([
+                _hash_token('GL', log.pk),
+                profile_token.get(log.profile_id),
+                profile_to_patient_token.get(log.profile_id),
+                _iso(log.timestamp),
+                _clean(log.glucose_level),
+                _clean(log.meal_context),
+                _clean(log.get_meal_context_display()),
+                _iso(log.created_at),
+            ])
 
-    for column_name in headers:
-        meanings_ws.append([column_name, header_meanings.get(column_name, 'N/A')])
+    predictions_ws = wb.create_sheet('glucose_predictions')
+    predictions_headers = [
+        'prediction_key', 'patient_profile_key', 'patient_key', 'predicted_value',
+        'target_timestamp', 'model', 'created_at',
+    ]
+    predictions_ws.append(predictions_headers)
+    _style_header(predictions_ws)
+    sheet_headers['glucose_predictions'] = predictions_headers
+    if profile_ids:
+        for p in GlucosePrediction.objects.filter(profile_id__in=profile_ids).order_by('profile_id', '-target_timestamp'):
+            predictions_ws.append([
+                _hash_token('PR', p.pk),
+                profile_token.get(p.profile_id),
+                profile_to_patient_token.get(p.profile_id),
+                _clean(p.predicted_value),
+                _iso(p.target_timestamp),
+                _clean(p.model),
+                _iso(p.created_at),
+            ])
 
-    meanings_ws.column_dimensions['A'].width = 36
-    meanings_ws.column_dimensions['B'].width = 90
-    meanings_ws.freeze_panes = 'A2'
+    alerts_ws = wb.create_sheet('doctor_alerts')
+    alerts_headers = [
+        'alert_key', 'patient_profile_key', 'patient_key', 'glucose_log_key',
+        'alert_type_code', 'alert_type_label', 'message_sanitized', 'is_read', 'created_at',
+    ]
+    alerts_ws.append(alerts_headers)
+    _style_header(alerts_ws)
+    sheet_headers['doctor_alerts'] = alerts_headers
+    if profile_ids:
+        for a in DoctorAlert.objects.filter(patient_profile_id__in=profile_ids).order_by('patient_profile_id', '-created_at'):
+            alerts_ws.append([
+                _hash_token('AL', a.pk),
+                profile_token.get(a.patient_profile_id),
+                profile_to_patient_token.get(a.patient_profile_id),
+                _hash_token('GL', a.glucose_log_id) if a.glucose_log_id else None,
+                _clean(a.alert_type),
+                _clean(a.get_alert_type_display()),
+                _sanitize_text(a.message),
+                _clean(a.is_read),
+                _iso(a.created_at),
+            ])
+
+    meds_ws = wb.create_sheet('medication_logs')
+    meds_headers = [
+        'medication_log_key', 'patient_profile_key', 'patient_key', 'medication_name_sanitized',
+        'dosage_sanitized', 'scheduled_time_code', 'scheduled_time_label', 'taken', 'date', 'created_at', 'updated_at',
+    ]
+    meds_ws.append(meds_headers)
+    _style_header(meds_ws)
+    sheet_headers['medication_logs'] = meds_headers
+    if profile_ids:
+        for m in MedicationLog.objects.filter(profile_id__in=profile_ids).order_by('profile_id', '-date', 'scheduled_time'):
+            meds_ws.append([
+                _hash_token('MD', m.pk),
+                profile_token.get(m.profile_id),
+                profile_to_patient_token.get(m.profile_id),
+                _sanitize_text(m.medication_name),
+                _sanitize_text(m.dosage),
+                _clean(m.scheduled_time),
+                _clean(m.get_scheduled_time_display()),
+                _clean(m.taken),
+                _iso(m.date),
+                _iso(m.created_at),
+                _iso(m.updated_at),
+            ])
+
+    dictionary_ws = wb.create_sheet('data_dictionary')
+    dictionary_headers = ['sheet_name', 'column_name', 'description']
+    dictionary_ws.append(dictionary_headers)
+    _style_header(dictionary_ws)
+
+    generic_dict = {
+        'patient_key': 'De-identified patient token (HMAC, irreversible).',
+        'patient_profile_key': 'De-identified patient profile token (HMAC, irreversible).',
+        'created_at': 'Record creation timestamp in ISO format.',
+        'updated_at': 'Record last update timestamp in ISO format.',
+    }
+
+    for sheet_name, headers in sheet_headers.items():
+        for column_name in headers:
+            description = generic_dict.get(column_name, 'Raw de-identified field for statistical analysis.')
+            dictionary_ws.append([sheet_name, column_name, description])
+
+    for ws in wb.worksheets:
+        _autosize(ws)
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     export_ts = timezone.now().strftime('%Y%m%d_%H%M%S')
-    response['Content-Disposition'] = f'attachment; filename="research_patient_export_{export_ts}.xlsx"'
+    scope_label = 'all_patients' if not selected_patient_id else f'single_patient_{selected_patient_id}'
+    response['Content-Disposition'] = f'attachment; filename="research_deidentified_export_{scope_label}_{export_ts}.xlsx"'
     response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'

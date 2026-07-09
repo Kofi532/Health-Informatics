@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Research View - {{ patient.first_name }} {{ patient.last_name }}{% endblock %}
+{% block title %}Research View - {{ patient_display_label }}{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -46,12 +46,17 @@
   <div class="d-md-flex justify-content-between align-items-center mb-4">
     <div>
       <div class="text-xs text-uppercase fw-bold text-indigo tracking-wider mb-1"><i class="bi bi-shield-lock-fill"></i> Researcher Portal / Clinical Record</div>
-      <h1 class="h3 fw-bold text-gray-900 mb-0">{{ patient.first_name }} {{ patient.last_name }}</h1>
+      <h1 class="h3 fw-bold text-gray-900 mb-0">{{ patient_display_label }}</h1>
     </div>
     <div class="mt-3 mt-md-0">
-      <a class="btn btn-outline-secondary px-3 py-2 fw-medium rounded-3 d-inline-flex align-items-center gap-2" href="{% url 'patients:patient_detail' patient.pk %}">
+      <a class="btn btn-outline-secondary px-3 py-2 fw-medium rounded-3 d-inline-flex align-items-center gap-2" href="{% url 'patients:researcher_patient_list' %}">
         <i class="bi bi-arrow-left"></i> Back to Patient Profile
       </a>
+      {% if not specialist_limited %}
+        <a class="btn btn-success px-3 py-2 fw-medium rounded-3 d-inline-flex align-items-center gap-2 ms-2" href="{% url 'patients:export_research_excel' %}?patient={{ patient.pk }}">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export This Patient (Excel)
+        </a>
+      {% endif %}
     </div>
   </div>
 
@@ -137,12 +142,12 @@
           <i class="bi bi-person-bounding-box text-primary"></i> Patient Profile
         </h2>
         <div class="d-flex flex-column">
-          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Name:</span> <span class="fw-semibold text-dark">{{ patient.first_name }} {{ patient.last_name }}</span></div>
-          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Date of Birth:</span> <span class="fw-medium text-dark">{{ patient.date_of_birth|date:"Y-m-d" }}</span></div>
+          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Identifier:</span> <span class="fw-semibold text-dark">{{ patient_display_label }}</span></div>
+          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Birth Year:</span> <span class="fw-medium text-dark">{{ patient_birth_year|default:"—" }}</span></div>
           <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Gender:</span> <span class="badge bg-light text-dark border px-2 py-0.5">{{ patient.get_gender_display }}</span></div>
-          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Email:</span> <span class="text-dark">{{ patient.email|default:"—" }}</span></div>
-          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Phone:</span> <span class="text-dark">{{ patient.phone_number|default:"—" }}</span></div>
-          <div class="detail-item d-flex flex-column"><span class="text-muted small mb-0.5">Address:</span> <span class="text-dark small fw-medium">{{ patient.address|default:"—" }}</span></div>
+          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Email:</span> <span class="text-dark">[REDACTED]</span></div>
+          <div class="detail-item d-flex justify-content-between"><span class="text-muted small">Phone:</span> <span class="text-dark">[REDACTED]</span></div>
+          <div class="detail-item d-flex flex-column"><span class="text-muted small mb-0.5">Address:</span> <span class="text-dark small fw-medium">[REDACTED]</span></div>
         </div>
       </div>
     </div>

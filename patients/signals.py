@@ -52,7 +52,7 @@ This reading exceeds the critical threshold of 200 mg/dL and requires immediate 
 Please contact the patient to assess their condition and provide guidance.
 
 ---
-This is an automated alert from the ASTA624 PROJECT Gestational Diabetes Monitoring System.
+This is an automated alert from the GlucoBridge Gestational Diabetes Monitoring System.
 """
 
     try:

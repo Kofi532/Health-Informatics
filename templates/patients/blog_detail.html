@@ -67,7 +67,7 @@
                 <div class="list-group-item comment-bubble p-3.5">
                     <div class="d-flex justify-content-between align-items-baseline mb-2">
                         <div class="fw-bold text-dark d-flex align-items-center gap-1.5">
-                            <i class="bi bi-person-circle text-secondary opacity-75"></i> {{ comment.author_name|default:"Anonymous Contributor" }}
+                            <i class="bi bi-person-circle text-secondary opacity-75"></i> {{ comment.display_author_name|default:comment.author_name|default:"Anonymous Contributor" }}
                         </div>
                         <span class="text-muted small text-xs d-flex align-items-center gap-1">
                             <i class="bi bi-clock opacity-50"></i> {{ comment.created_at|date:'F j, Y \a\t g:i a' }}

@@ -77,6 +77,7 @@ def compute_patient_glucose_stats(user):
         entry = {
             'id': int(row['id']),
             'timestamp': timestamp.isoformat(),
+            'timestamp_display': timestamp.strftime('%Y-%m-%d %H:%M'),
             'glucose_level': int(row['glucose_level']),
             'meal_context': row['meal_context'],
             'rolling_average': float(round(rolling_average or 0, 2)),

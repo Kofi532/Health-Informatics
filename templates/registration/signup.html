@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Sign up - ASTA624 PROJECT{% endblock %}
+{% block title %}Sign up - GlucoBridge{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -89,7 +89,7 @@
                             <input type="checkbox" class="form-check-input" id="id_agree_to_terms" name="agree_to_terms" {% if form.agree_to_terms.value %}checked{% endif %}>
                             <label class="form-check-label small text-muted" for="id_agree_to_terms" style="line-height: 1.5;">
                                 I understand that my personal information will be treated in accordance with the 
-                                <a href="/privacy/" class="text-decoration-none">ASTA624 PROJECT Privacy Notice</a> and I agree to the 
+                                <a href="/privacy/" class="text-decoration-none">GlucoBridge Privacy Notice</a> and I agree to the 
                                 <a href="/terms/" class="text-decoration-none">Terms of Use</a>.
                             </label>
                             {% if form.agree_to_terms.errors %}

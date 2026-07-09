@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Patient Dashboard - ASTA624 PROJECT{% endblock %}
+{% block title %}Patient Dashboard - GlucoBridge{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -320,18 +320,16 @@
                                     <th class="py-3">Level (mg/dL)</th>
                                     <th class="py-3">Meal Context</th>
                                     <th class="py-3">7-Day Avg</th>
-                                    <th class="py-3">Std Dev</th>
                                     <th class="pe-3 py-3 text-end">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for entry in cleaned_data %}
                                     <tr class="{% if entry.anomaly %}anomaly-row{% endif %} border-bottom">
-                                        <td class="ps-3 py-3 fw-medium">{{ entry.timestamp|date:"Y-m-d H:i" }}</td>
+                                        <td class="ps-3 py-3 fw-medium">{{ entry.timestamp_display|default:entry.timestamp }}</td>
                                         <td class="py-3 fw-bold">{{ entry.glucose_level }}</td>
                                         <td class="py-3"><span class="badge bg-light text-dark border px-2 py-1">{{ entry.meal_context }}</span></td>
                                         <td class="py-3 text-muted">{{ entry.rolling_average|default:"-" }}</td>
-                                        <td class="py-3 text-muted">{{ entry.rolling_std|default:"-" }}</td>
                                         <td class="pe-3 py-3 text-end">
                                             {% if entry.anomaly %}
                                                 <span class="badge bg-danger text-uppercase px-2.5 py-1.5 rounded-pill"><i class="bi bi-exclamation-octagon me-1"></i> Anomaly</span>
@@ -342,7 +340,7 @@
                                     </tr>
                                 {% empty %}
                                     <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
+                                        <td colspan="5" class="text-center py-5 text-muted">
                                             <i class="bi bi-folder-x fs-2 d-block mb-2 text-black-50"></i>
                                             No glucose metrics have been logged yet.
                                         </td>

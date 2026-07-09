@@ -1,57 +1,154 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Privacy Notice - ASTA624 PROJECT{% endblock %}
+{% block title %}HIPAA Notice of Privacy Practices - GlucoBridge{% endblock %}
 
 {% block content %}
-  <div class="container py-4">
-    <div class="card">
-      <div class="card-body">
-        <h1 class="card-title">ASTA624 PROJECT Privacy Notice</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+            
+            <!-- HIPAA Mandatory Header Warning Box -->
+            <div class="alert alert-info border-start border-0 border-4 border-info shadow-sm mb-4 p-4" role="alert">
+                <h4 class="alert-heading fw-bold text-dark mb-2">Notice of Privacy Practices</h4>
+                <p class="mb-0 text-secondary small text-uppercase tracking-wider fw-semibold">
+                    This notice describes how medical information about you may be used and disclosed and how you can get access to this information. Please review it carefully.
+                </p>
+            </div>
 
-        <p class="lead">Last updated: <!-- insert date --> </p>
+            <!-- Main Document Card -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <header class="border-bottom pb-4 mb-4">
+                        <h1 class="display-6 fw-bold text-dark mb-2">GlucoBridge Privacy Notice</h1>
+                        <p class="text-muted mb-0">
+                            <strong>Effective Date:</strong> July 9, 2026 | 
+                            <span class="badge bg-light text-dark border ms-1">HIPAA Compliant Standard</span>
+                        </p>
+                    </header>
 
-        <h2>1. Introduction</h2>
-        <p>ASTA624 PROJECT is a health informatics web application designed to help manage patient glycemic health. This Privacy Notice explains what personal and health-related data we collect, why we collect it, how we protect it, and the rights available to users.</p>
+                    <!-- Section 1: Intro -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">1. Introduction & Protected Health Information (PHI)</h2>
+                        <p class="text-secondary leading-relaxed">
+                            GlucoBridge is a health informatics web application designed to facilitate patient glycemic health tracking, remote monitoring, and clinical decision support. Because we collect, store, and process health telemetry, we are committed to protecting your <strong>Protected Health Information (PHI)</strong> in strict accordance with the Health Insurance Portability and Accountability Act (HIPAA).
+                        </p>
+                    </section>
 
-        <h2>2. Data We Collect</h2>
-        <p>We collect and process the following categories of information:</p>
-        <ul>
-          <li><strong>Account information:</strong> registration details such as username and email address needed to create and maintain user accounts.</li>
-          <li><strong>Patient profiles and encounters:</strong> demographic and clinical profile fields, notes about medical encounters, and related metadata.</li>
-          <li><strong>Health telemetry:</strong> vital signs and blood glucose readings recorded as <code>GlucoseLog</code> entries.</li>
-        </ul>
+                    <!-- Section 2: Data Categories -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">2. Categories of Health Data We Collect</h2>
+                        <p class="text-secondary">To provide accurate tracking and analysis, the application processes the following data classes:</p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 h-100 border-start border-primary border-3">
+                                    <h3 class="h6 fw-bold mb-1">Account Profiles</h3>
+                                    <p class="small text-muted mb-0">Usernames, authenticated email addresses, and core administrative credentials.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 h-100 border-start border-primary border-3">
+                                    <h3 class="h6 fw-bold mb-1">Clinical Encounters</h3>
+                                    <p class="small text-muted mb-0">Patient demographic fields, clinical encounter history notes, and provider metadata.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 h-100 border-start border-primary border-3">
+                                    <h3 class="h6 fw-bold mb-1">Health Telemetry</h3>
+                                    <p class="small text-muted mb-0">Vital signs and blood glucose readings recorded strictly via <code>GlucoseLog</code> data models.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-        <h2>3. Purpose and Use of Data</h2>
-        <p>We process the above data for the following purposes:</p>
-        <ul>
-          <li>To calculate glucose statistics and summary metrics for individual patients.</li>
-          <li>To detect spikes, anomalies, or clinically relevant events in blood glucose readings and to surface alerts to care teams or users when appropriate.</li>
-          <li>To generate short-term predictions of future glucose levels to aid in patient monitoring and self-management.</li>
-          <li>To provide and maintain user accounts, authentication, and application functionality.</li>
-        </ul>
+                    <!-- Section 3: Purpose & Analytics -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">3. Permitted Uses and Disclosures of Your PHI</h2>
+                        <p class="text-secondary">Under HIPAA rules, your PHI is accessed and processed strictly for the following operational workflows:</p>
+                        <ul class="text-secondary lh-lg">
+                            <li><strong>Treatment & Monitoring:</strong> Generating individual glucose statistics, summary metrics, and trend lines for yourself and your linked care teams.</li>
+                            <li><strong>Clinical Safety Operations:</strong> Running server-side anomaly detection engines to flag glycemic spikes, dangerous trends, or critical anomalies, surfacing proactive alerts directly to clinical dashboards.</li>
+                            <li><strong>Health Informatics & Forecasting:</strong> Utilizing time-series forecasting models on your telemetry log history to generate short-term predictions of future blood glucose levels to assist in preventative management.</li>
+                        </ul>
+                    </section>
 
-        <h2>4. Legal Basis and Access</h2>
-        <p>Processing is necessary for the performance of the services provided by the application and for legitimate healthcare management purposes. Access to personal and health data is strictly limited to authenticated users with appropriate permissions within the application.</p>
+                    <!-- Section 4: HIPAA Pathways -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">4. Legal Foundations & Access Governance</h2>
+                        <p class="text-secondary">
+                            Access to PHI within GlucoBridge is bound to the strict principle of **Minimum Necessary Access**. Data visibility is partitioned through role-based access tokens; only explicitly authenticated clinicians or users with verifiable permissions can query patient files. 
+                        </p>
+                        <p class="text-secondary">
+                            When data is utilized for clinical research or performance evaluation, it is completely separated from direct identifiers using the **HIPAA Safe Harbor De-identification Method** or restricted under an explicit **Data Use Agreement (DUA)** for Limited Data Sets.
+                        </p>
+                    </section>
 
-        <h2>5. Security</h2>
-        <p>We treat health telemetry and personal identifiers as sensitive information. Reasonable technical and organizational measures are in place to protect data from unauthorized access, alteration, disclosure, or destruction. These measures include authentication controls, access restrictions, and secure handling of exported datasets.</p>
-        <p>When data is exported for analysis or research, identifying fields are removed or pseudonymized where possible to reduce re-identification risk.</p>
+                    <!-- Section 5: Technical Security -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">5. Technical and Organizational Security</h2>
+                        <p class="text-secondary">
+                            We implement rigorous administrative, physical, and technical safeguards to ensure the confidentiality, integrity, and availability of all electronic PHI (ePHI):
+                        </p>
+                        <ul class="text-secondary lh-lg">
+                            <li><strong>Encryption:</strong> Data encryption protocols are active for telemetry data both in transit (TLS 1.3) and at rest (AES-256).</li>
+                            <li><strong>Audit Logging:</strong> Every record access, export event, login, and profile modification is tracked via immutable backend audit trails.</li>
+                            <li><strong>Session Integrity:</strong> Automatic timeouts, strong password policies, and strict token-based authentication protect operational endpoints.</li>
+                        </ul>
+                    </section>
 
-        <h2>6. Sharing and Disclosure</h2>
-        <p>We do not share personal health data with third parties except as required by law or with explicit consent. Internal sharing is limited to authorized personnel and system components that need the data to deliver application features (for example, analytics, alerting, or clinician dashboards).</p>
+                    <!-- Section 6: Right to Revoke -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">6. Right to Revoke Authorization</h2>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <p class="text-secondary mb-0 small">
+                                If you grant specific consent or authorization to share telemetry metrics for peripheral studies, **you retain the absolute right to revoke that authorization at any time**. Revoking your authorization stops future data processing or sharing immediately, though it cannot retroactively pull back data used while the consent was active. You can execute a revocation directly inside your Account Dashboard or by contacting the system administrator.
+                            </p>
+                        </div>
+                    </section>
 
-        <h2>7. Data Retention</h2>
-        <p>We retain personal and clinical data for as long as required to provide the service and to meet legal or regulatory obligations. Where practical, data that is no longer needed will be deleted or anonymized.</p>
+                    <!-- Section 7: User Rights under HIPAA -->
+                    <section class="mb-5">
+                        <h2 class="h4 fw-bold text-primary mb-3">7. Your Individual Legal Rights</h2>
+                        <p class="text-secondary">You hold the following federal rights regarding your protected health documentation within this application:</p>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item px-0 py-3">
+                                <h4 class="h6 fw-bold text-dark mb-1">Right to Access & Inspect</h4>
+                                <p class="small text-muted mb-0">You have the right to request and download a complete electronic export of your historical <code>GlucoseLog</code> histories and profile data.</p>
+                            </div>
+                            <div class="list-group-item px-0 py-3">
+                                <h4 class="h6 fw-bold text-dark mb-1">Right to Restriction Request</h4>
+                                <p class="small text-muted mb-0">You can request that we restrict how we use or share certain segments of your clinical data for treatment or operations (though we are not legally required to agree if it compromises vital tracking safety).</p>
+                            </div>
+                            <div class="list-group-item px-0 py-3">
+                                <h4 class="h6 fw-bold text-dark mb-1">Right to an Accounting of Disclosures</h4>
+                                <p class="small text-muted mb-0">You may request a formal log of instances where your health data was shared outside standard application treatment operations.</p>
+                            </div>
+                        </div>
+                    </section>
 
-        <h2>8. Your Rights</h2>
-        <p>Depending on your jurisdiction, you may have rights regarding your personal data, including the right to access, rectify, delete, or restrict processing. To exercise these rights or to request information about the data we hold about you, contact the site administrator.</p>
+                    <!-- Section 8: Contacts & Breach Notification -->
+                    <section class="mb-4">
+                        <h2 class="h4 fw-bold text-primary mb-3">8. Contacts & Breach Notification Procedures</h2>
+                        <p class="text-secondary">
+                            In the highly improbable event of a data breach involving unencrypted health data, GlucoBridge adheres to the federal **HIPAA Breach Notification Rule**. Affected individuals and regional care system administrators will be notified formally within mandated legal timeframes.
+                        </p>
+                        <p class="text-secondary mb-0">
+                            For privacy inquiries, rights assertions, or formal complaints, please reach out to the project administration desk via the secure support channels established in your application portal.
+                        </p>
+                    </section>
 
-        <h2>9. Contact</h2>
-        <p>For questions about this Privacy Notice, data access requests, or other privacy concerns, please contact the project administrator at the address listed in the application documentation.</p>
+                    <!-- Footer Warning Note -->
+                    <footer class="border-top pt-4 mt-5">
+                        <p class="small text-muted fst-italic mb-0">
+                            Disclaimer: This Notice of Privacy Practices is maintained for internal application system compliance context. It should be routinely validated by an informatics legal expert to mirror evolving institutional policies and specific deployment infrastructure requirements.
+                        </p>
+                    </footer>
 
-        <p class="small text-muted">This Privacy Notice is a template provided for informational purposes and should be reviewed by legal counsel to ensure compliance with applicable laws and regulations before publication.</p>
-      </div>
+                </div>
+            </div>
+
+        </div>
     </div>
-  </div>
+</div>
 {% endblock %}
