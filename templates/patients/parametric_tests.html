@@ -1,0 +1,2300 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Statistical Tests Lab — GlucoBridge{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .stats-hero {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
+    border-radius: 20px;
+    color: #fff;
+  }
+  .test-nav .nav-link {
+    border-radius: 10px !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #475569;
+    padding: 0.55rem 1rem;
+    border: 1.5px solid transparent;
+    transition: all 0.2s;
+  }
+  .test-nav .nav-link.active {
+    background: linear-gradient(135deg, #4338ca, #6366f1);
+    color: #fff !important;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+  }
+  .test-nav .nav-link:not(.active):hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4338ca;
+  }
+  .test-panel {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  .result-badge {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .sig { background: #dcfce7; color: #16a34a; }
+  .not-sig { background: #fee2e2; color: #dc2626; }
+  .marginal { background: #fef9c3; color: #ca8a04; }
+  .stat-row { border-left: 3px solid #c7d2fe; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; background: #f8f9fe; border-radius: 0 8px 8px 0; }
+  .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748b; }
+  .stat-value { font-size: 1.15rem; font-weight: 800; color: #1e1b4b; }
+  .chart-shell { position: relative; min-height: 280px; }
+  .qq-shell { position: relative; min-height: 260px; }
+  .qq-controls {
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    padding: 0.65rem 0.75rem;
+  }
+  .qq-meta {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.45rem;
+    line-height: 1.35;
+  }
+  .decision-rule-box {
+    border: 1px solid #dbeafe;
+    background: linear-gradient(135deg, #f8fbff, #eff6ff);
+    color: #1e3a8a;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+  .assumption-pill { font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 20px; font-weight: 600; }
+  .assumption-wrap {
+    background: linear-gradient(135deg, #fffdf5, #fff7ed);
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 0.95rem 1rem;
+  }
+  .assumption-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.65rem;
+  }
+  .assumption-card {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.75rem;
+  }
+  .assumption-card h4 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+    color: #475569;
+  }
+  .assumption-card p {
+    font-size: 0.78rem;
+    margin: 0;
+    color: #334155;
+    line-height: 1.4;
+  }
+  .assumption-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    margin-bottom: 0.45rem;
+  }
+  .assumption-pass { background: #dcfce7; color: #166534; }
+  .assumption-warn { background: #fef3c7; color: #92400e; }
+  .assumption-fail { background: #fee2e2; color: #991b1b; }
+  .assumption-note {
+    font-size: 0.76rem;
+    color: #64748b;
+    margin-top: 0.6rem;
+  }
+  .recommendation-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e3a8a;
+    border-radius: 12px;
+    padding: 0.8rem 0.95rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .recommendation-box strong {
+    color: #1d4ed8;
+  }
+  .method-note {
+    background: linear-gradient(135deg, #f8fafc, #eff6ff);
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+  }
+  .formula-box { background: #f1f5f9; border-radius: 10px; padding: 0.75rem 1rem; font-family: "Courier New", monospace; font-size: 0.82rem; color: #334155; }
+  .control-panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; }
+  .effect-bar { height: 10px; border-radius: 5px; background: linear-gradient(90deg, #6366f1, #a5b4fc); }
+  .test-icon { font-size: 1.4rem; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+  .table-heatmap td { transition: background 0.3s; font-size: 0.85rem; }
+  .corr-badge { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+  .run-btn { background: linear-gradient(135deg, #4338ca, #6366f1); color: #fff; border: none; border-radius: 10px; padding: 0.55rem 1.5rem; font-weight: 700; font-size: 0.88rem; transition: all 0.2s; box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(99,102,241,0.4); }
+  .desc-card { background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 12px; border-left: 4px solid #6366f1; }
+  .scatter-info { font-size: 0.8rem; color: #64748b; }
+  .contingency-table th, .contingency-table td { text-align: center; min-width: 70px; }
+  .contingency-table th { background: #f1f5f9; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<div class="stats-hero p-4 p-md-5 mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <a href="{% url 'patients:researcher_patient_list' %}" class="btn btn-sm btn-light opacity-75 mb-3 d-inline-flex align-items-center gap-1 rounded-pill px-3">
+        <i class="bi bi-arrow-left-short fs-5"></i> Back to Research Dashboard
+      </a>
+      <h1 class="fw-bold mb-1" style="font-size:1.9rem;">Statistical Tests Laboratory</h1>
+      <p class="mb-0 opacity-75" style="max-width:600px;">
+        Perform interactive parametric tests on your patient cohort — independent t-tests, ANOVA, correlation analysis, linear regression, and chi-square tests — all powered by live clinical data.
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap mt-2">
+      <span class="badge bg-white text-primary fw-semibold px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-people-fill me-1"></i> <span id="heroPatientCount">—</span> Patients</span>
+      <span class="badge bg-white text-success fw-semibold px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-bar-chart-line-fill me-1"></i> 5 Tests Available</span>
+    </div>
+  </div>
+</div>
+
+<div class="method-note p-3 p-md-4 mb-4">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-shield-check fs-4 text-primary"></i>
+    <div>
+      <h2 class="h6 fw-bold mb-1">Assumption screening is part of the workflow</h2>
+      <p class="mb-1 text-muted small">Each test now audits the assumptions it depends on before you interpret the p-value. These are data-driven screening checks, not proof of validity.</p>
+      <p class="mb-0 text-muted small">When assumptions look weak, the lab flags the risk and recommends a safer fallback such as Mann-Whitney, Welch ANOVA, Kruskal-Wallis, Spearman correlation, transformation, or category merging.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Test Navigator -->
+<ul class="nav test-nav flex-nowrap overflow-auto gap-2 mb-4 pb-1" id="testNavTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active d-flex align-items-center gap-2" id="ttest-tab" data-bs-toggle="tab" data-bs-target="#ttest-panel" type="button" role="tab">
+      <i class="bi bi-intersect"></i> Independent T-Test
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link d-flex align-items-center gap-2" id="anova-tab" data-bs-toggle="tab" data-bs-target="#anova-panel" type="button" role="tab">
+      <i class="bi bi-bar-chart-steps"></i> One-Way ANOVA
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link d-flex align-items-center gap-2" id="pearson-tab" data-bs-toggle="tab" data-bs-target="#pearson-panel" type="button" role="tab">
+      <i class="bi bi-diagram-3"></i> Pearson Correlation
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link d-flex align-items-center gap-2" id="regression-tab" data-bs-toggle="tab" data-bs-target="#regression-panel" type="button" role="tab">
+      <i class="bi bi-graph-up-arrow"></i> Linear Regression
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link d-flex align-items-center gap-2" id="chisq-tab" data-bs-toggle="tab" data-bs-target="#chisq-panel" type="button" role="tab">
+      <i class="bi bi-grid-3x3"></i> Chi-Square Test
+    </button>
+  </li>
+</ul>
+
+<!-- Tab Panels -->
+<div class="tab-content" id="testTabContent">
+
+  <!-- ===== T-TEST PANEL ===== -->
+  <div class="tab-pane fade show active" id="ttest-panel" role="tabpanel">
+    <div class="card test-panel">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="test-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-intersect fs-5"></i></div>
+          <div>
+            <h2 class="h5 fw-bold mb-1">Independent Samples T-Test (Welch's)</h2>
+            <p class="text-muted small mb-0">Tests whether the means of a numeric variable differ significantly between two independent groups. Welch's method handles unequal variances.</p>
+          </div>
+        </div>
+
+        <div class="desc-card p-3 mb-4">
+          <div class="formula-box">H₀: μ₁ = μ₂ &nbsp;|&nbsp; H₁: μ₁ ≠ μ₂<br>
+t = (x̄₁ − x̄₂) / √(s₁²/n₁ + s₂²/n₂) &nbsp;·&nbsp; Welch-Satterthwaite df</div>
+        </div>
+
+        <div class="control-panel mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Grouping Variable (2 groups)</label>
+              <select id="ttestGroupVar" class="form-select form-select-sm">
+                <option value="gender">Gender</option>
+                <option value="locality">Locality (Urban/Rural)</option>
+                <option value="diabetes_type">Diabetes Type</option>
+                <option value="risk_band">Risk Band</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold text-muted">Group A</label>
+              <select id="ttestGroupA" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold text-muted">Group B</label>
+              <select id="ttestGroupB" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Numeric Outcome Variable</label>
+              <select id="ttestNumVar" class="form-select form-select-sm">
+                <option value="avg_glucose">Avg. Glucose (mg/dL)</option>
+                <option value="stability_score">Stability Score (%)</option>
+                <option value="safe_percentage">Time in Safe Range (%)</option>
+                <option value="age">Patient Age (years)</option>
+                <option value="reading_count">Reading Count</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold text-muted">α level</label>
+              <select id="ttestAlpha" class="form-select form-select-sm">
+                <option value="0.05" selected>0.05</option>
+                <option value="0.01">0.01</option>
+                <option value="0.10">0.10</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <button class="run-btn" onclick="runTTest()"><i class="bi bi-play-fill me-1"></i> Run Test</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ttestResults" class="d-none">
+          <div class="row g-4">
+            <div class="col-lg-5">
+              <div class="d-flex flex-wrap gap-2 mb-3" id="ttestSigBadge"></div>
+              <div class="row g-2 mb-3" id="ttestStatCards"></div>
+              <div class="mb-3">
+                <div class="stat-label mb-1">Effect Size (Cohen's d)</div>
+                <div class="d-flex align-items-center gap-2">
+                  <div id="ttestEffectBar" class="effect-bar flex-grow-1" style="width:0%"></div>
+                  <span id="ttestEffectLabel" class="fw-bold text-primary small"></span>
+                </div>
+                <div id="ttestEffectText" class="text-muted" style="font-size:0.78rem; margin-top:4px;"></div>
+              </div>
+              <div id="ttestAssumptions" class="assumption-wrap mb-3"></div>
+              <div id="ttestRecommendation" class="recommendation-box mb-3"></div>
+              <div id="ttestDecisionRule" class="decision-rule-box mb-2"></div>
+              <div class="chart-shell mt-2"><canvas id="ttestCriticalRegionChart"></canvas></div>
+              <div class="qq-controls mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">QQ Theoretical Distribution</label>
+                <select id="ttestQqDist" class="form-select form-select-sm">
+                  <option value="normal" selected>Normal</option>
+                  <option value="exponential">Exponential</option>
+                  <option value="lognormal">Lognormal</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="logistic">Logistic</option>
+                </select>
+                <div id="ttestQqMeta" class="qq-meta"></div>
+              </div>
+              <div class="chart-shell mt-3"><canvas id="ttestQqPlot"></canvas></div>
+              <div id="ttestGroupStats" class="mt-3"></div>
+            </div>
+            <div class="col-lg-7">
+              <div class="chart-shell"><canvas id="ttestChart"></canvas></div>
+              <div class="chart-shell mt-3"><canvas id="ttestDist"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div id="ttestEmpty" class="empty-state"><i class="bi bi-intersect fs-1 d-block mb-2 opacity-25"></i>Configure the variables above and click <strong>Run Test</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ANOVA PANEL ===== -->
+  <div class="tab-pane fade" id="anova-panel" role="tabpanel">
+    <div class="card test-panel">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="test-icon bg-success bg-opacity-10 text-success"><i class="bi bi-bar-chart-steps fs-5"></i></div>
+          <div>
+            <h2 class="h5 fw-bold mb-1">One-Way Analysis of Variance (ANOVA)</h2>
+            <p class="text-muted small mb-0">Compares means across three or more groups simultaneously. Tests whether at least one group mean differs from the others.</p>
+          </div>
+        </div>
+
+        <div class="desc-card p-3 mb-4">
+          <div class="formula-box">H₀: μ₁ = μ₂ = ... = μₖ &nbsp;|&nbsp; H₁: at least one μᵢ differs<br>
+F = MS_between / MS_within &nbsp;·&nbsp; df₁ = k−1, df₂ = N−k</div>
+        </div>
+
+        <div class="control-panel mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Grouping Variable</label>
+              <select id="anovaGroupVar" class="form-select form-select-sm">
+                <option value="age_group">Age Group</option>
+                <option value="gender">Gender</option>
+                <option value="locality">Locality</option>
+                <option value="diabetes_type">Diabetes Type</option>
+                <option value="risk_band">Risk Band</option>
+                <option value="region">Region</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Numeric Outcome Variable</label>
+              <select id="anovaNumVar" class="form-select form-select-sm">
+                <option value="avg_glucose">Avg. Glucose (mg/dL)</option>
+                <option value="stability_score">Stability Score (%)</option>
+                <option value="safe_percentage">Time in Safe Range (%)</option>
+                <option value="age">Patient Age (years)</option>
+                <option value="reading_count">Reading Count</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold text-muted">α level</label>
+              <select id="anovaAlpha" class="form-select form-select-sm">
+                <option value="0.05" selected>0.05</option>
+                <option value="0.01">0.01</option>
+                <option value="0.10">0.10</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <button class="run-btn" onclick="runANOVA()"><i class="bi bi-play-fill me-1"></i> Run Test</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="anovaResults" class="d-none">
+          <div class="row g-4">
+            <div class="col-lg-4">
+              <div class="d-flex flex-wrap gap-2 mb-3" id="anovaSigBadge"></div>
+              <div class="row g-2 mb-3" id="anovaStatCards"></div>
+              <div class="mb-3">
+                <div class="stat-label mb-1">Effect Size (η²)</div>
+                <div class="d-flex align-items-center gap-2">
+                  <div id="anovaEffectBar" class="effect-bar flex-grow-1"></div>
+                  <span id="anovaEffectLabel" class="fw-bold text-success small"></span>
+                </div>
+                <div id="anovaEffectText" class="text-muted" style="font-size:0.78rem; margin-top:4px;"></div>
+              </div>
+              <div id="anovaAssumptions" class="assumption-wrap mb-3"></div>
+              <div id="anovaRecommendation" class="recommendation-box mb-3"></div>
+              <div id="anovaDecisionRule" class="decision-rule-box mb-2"></div>
+              <div class="chart-shell mt-2"><canvas id="anovaCriticalRegionChart"></canvas></div>
+              <div class="qq-controls mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">QQ Theoretical Distribution</label>
+                <select id="anovaQqDist" class="form-select form-select-sm">
+                  <option value="normal" selected>Normal</option>
+                  <option value="exponential">Exponential</option>
+                  <option value="lognormal">Lognormal</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="logistic">Logistic</option>
+                </select>
+                <div id="anovaQqMeta" class="qq-meta"></div>
+              </div>
+              <div class="chart-shell mt-3"><canvas id="anovaQqPlot"></canvas></div>
+              <div id="anovaGroupTable" class="mt-3"></div>
+            </div>
+            <div class="col-lg-8">
+              <div class="chart-shell"><canvas id="anovaChart"></canvas></div>
+              <div class="chart-shell mt-3"><canvas id="anovaBoxChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div id="anovaEmpty" class="empty-state"><i class="bi bi-bar-chart-steps fs-1 d-block mb-2 opacity-25"></i>Configure the variables above and click <strong>Run Test</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PEARSON PANEL ===== -->
+  <div class="tab-pane fade" id="pearson-panel" role="tabpanel">
+    <div class="card test-panel">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="test-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-diagram-3 fs-5"></i></div>
+          <div>
+            <h2 class="h5 fw-bold mb-1">Pearson Correlation Analysis</h2>
+            <p class="text-muted small mb-0">Measures the linear relationship between two continuous variables. Produces the correlation coefficient r ∈ [−1, 1] with a significance test.</p>
+          </div>
+        </div>
+
+        <div class="desc-card p-3 mb-4">
+          <div class="formula-box">r = Σ(xᵢ−x̄)(yᵢ−ȳ) / √[Σ(xᵢ−x̄)² · Σ(yᵢ−ȳ)²]<br>
+t = r√(n−2) / √(1−r²) &nbsp;·&nbsp; df = n−2</div>
+        </div>
+
+        <div class="control-panel mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Variable X</label>
+              <select id="pearsonX" class="form-select form-select-sm">
+                <option value="age">Patient Age (years)</option>
+                <option value="avg_glucose">Avg. Glucose (mg/dL)</option>
+                <option value="stability_score">Stability Score (%)</option>
+                <option value="safe_percentage">Time in Safe Range (%)</option>
+                <option value="reading_count">Reading Count</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Variable Y</label>
+              <select id="pearsonY" class="form-select form-select-sm">
+                <option value="avg_glucose">Avg. Glucose (mg/dL)</option>
+                <option value="stability_score">Stability Score (%)</option>
+                <option value="safe_percentage">Time in Safe Range (%)</option>
+                <option value="age">Patient Age (years)</option>
+                <option value="reading_count">Reading Count</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold text-muted">Color by</label>
+              <select id="pearsonColor" class="form-select form-select-sm">
+                <option value="">None</option>
+                <option value="gender">Gender</option>
+                <option value="locality">Locality</option>
+                <option value="risk_band">Risk Band</option>
+                <option value="age_group">Age Group</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <button class="run-btn" onclick="runPearson()"><i class="bi bi-play-fill me-1"></i> Run Test</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="pearsonResults" class="d-none">
+          <div class="row g-4">
+            <div class="col-lg-4">
+              <div class="d-flex flex-wrap gap-2 mb-3" id="pearsonSigBadge"></div>
+              <div class="row g-2 mb-3" id="pearsonStatCards"></div>
+              <div class="mb-3">
+                <div class="stat-label mb-1">Correlation Strength</div>
+                <div id="pearsonCorrViz" class="d-flex justify-content-center align-items-center py-2"></div>
+                <div id="pearsonInterpret" class="text-muted text-center mt-2" style="font-size:0.82rem;"></div>
+              </div>
+              <div id="pearsonAssumptions" class="assumption-wrap mb-3"></div>
+              <div id="pearsonRecommendation" class="recommendation-box mb-3"></div>
+              <div id="pearsonDecisionRule" class="decision-rule-box mb-2"></div>
+              <div class="chart-shell mt-2"><canvas id="pearsonCriticalRegionChart"></canvas></div>
+              <div class="qq-controls mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">QQ Theoretical Distribution</label>
+                <select id="pearsonQqDist" class="form-select form-select-sm">
+                  <option value="normal" selected>Normal</option>
+                  <option value="exponential">Exponential</option>
+                  <option value="lognormal">Lognormal</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="logistic">Logistic</option>
+                </select>
+                <div id="pearsonQqMeta" class="qq-meta"></div>
+              </div>
+              <div class="chart-shell mt-3"><canvas id="pearsonQqPlot"></canvas></div>
+              <div class="chart-shell mt-3"><canvas id="pearsonHeatmap"></canvas></div>
+            </div>
+            <div class="col-lg-8">
+              <div class="chart-shell"><canvas id="pearsonScatter"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div id="pearsonEmpty" class="empty-state"><i class="bi bi-diagram-3 fs-1 d-block mb-2 opacity-25"></i>Select two numeric variables and click <strong>Run Test</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REGRESSION PANEL ===== -->
+  <div class="tab-pane fade" id="regression-panel" role="tabpanel">
+    <div class="card test-panel">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="test-icon bg-info bg-opacity-10 text-info"><i class="bi bi-graph-up-arrow fs-5"></i></div>
+          <div>
+            <h2 class="h5 fw-bold mb-1">Simple Linear Regression</h2>
+            <p class="text-muted small mb-0">Fits a linear model ŷ = β₀ + β₁x to the data. Tests whether the predictor explains significant variance in the outcome.</p>
+          </div>
+        </div>
+
+        <div class="desc-card p-3 mb-4">
+          <div class="formula-box">ŷ = β₀ + β₁x &nbsp;·&nbsp; β₁ = Σ(xᵢ−x̄)(yᵢ−ȳ) / Σ(xᵢ−x̄)²<br>
+R² = 1 − SS_res/SS_tot &nbsp;·&nbsp; t = β₁/SE(β₁), df = n−2</div>
+        </div>
+
+        <div class="control-panel mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Predictor (X)</label>
+              <select id="regX" class="form-select form-select-sm">
+                <option value="age">Patient Age (years)</option>
+                <option value="avg_glucose">Avg. Glucose (mg/dL)</option>
+                <option value="stability_score">Stability Score (%)</option>
+                <option value="safe_percentage">Time in Safe Range (%)</option>
+                <option value="reading_count">Reading Count</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Outcome (Y)</label>
+              <select id="regY" class="form-select form-select-sm">
+                <option value="avg_glucose">Avg. Glucose (mg/dL)</option>
+                <option value="stability_score">Stability Score (%)</option>
+                <option value="safe_percentage">Time in Safe Range (%)</option>
+                <option value="age">Patient Age (years)</option>
+                <option value="reading_count">Reading Count</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <button class="run-btn" onclick="runRegression()"><i class="bi bi-play-fill me-1"></i> Fit Model</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="regressionResults" class="d-none">
+          <div class="row g-4">
+            <div class="col-lg-4">
+              <div class="d-flex flex-wrap gap-2 mb-3" id="regressionSigBadge"></div>
+              <div class="row g-2 mb-3" id="regressionStatCards"></div>
+              <div id="regressionEquation" class="formula-box mb-3"></div>
+              <div id="regressionAssumptions" class="assumption-wrap mb-3"></div>
+              <div id="regressionRecommendation" class="recommendation-box mb-3"></div>
+              <div id="regressionDecisionRule" class="decision-rule-box mb-2"></div>
+              <div class="chart-shell mt-2"><canvas id="regressionCriticalRegionChart"></canvas></div>
+              <div class="qq-controls mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">QQ Theoretical Distribution</label>
+                <select id="regressionQqDist" class="form-select form-select-sm">
+                  <option value="normal" selected>Normal</option>
+                  <option value="exponential">Exponential</option>
+                  <option value="lognormal">Lognormal</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="logistic">Logistic</option>
+                </select>
+                <div id="regressionQqMeta" class="qq-meta"></div>
+              </div>
+              <div class="chart-shell mt-3"><canvas id="regressionQqPlot"></canvas></div>
+              <div class="chart-shell"><canvas id="regressionResiduals"></canvas></div>
+            </div>
+            <div class="col-lg-8">
+              <div class="chart-shell" style="min-height:340px;"><canvas id="regressionScatter"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div id="regressionEmpty" class="empty-state"><i class="bi bi-graph-up-arrow fs-1 d-block mb-2 opacity-25"></i>Select predictor and outcome variables and click <strong>Fit Model</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CHI-SQUARE PANEL ===== -->
+  <div class="tab-pane fade" id="chisq-panel" role="tabpanel">
+    <div class="card test-panel">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="test-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-grid-3x3 fs-5"></i></div>
+          <div>
+            <h2 class="h5 fw-bold mb-1">Chi-Square Test of Independence</h2>
+            <p class="text-muted small mb-0">Tests whether two categorical variables are statistically independent. A significant result suggests an association between the variables.</p>
+          </div>
+        </div>
+
+        <div class="desc-card p-3 mb-4">
+          <div class="formula-box">χ² = Σ (Oᵢⱼ − Eᵢⱼ)² / Eᵢⱼ &nbsp;·&nbsp; Eᵢⱼ = (rowᵢ × colⱼ) / N<br>
+df = (r−1)(c−1) &nbsp;·&nbsp; Cramér's V = √(χ²/N·min(r−1, c−1))</div>
+        </div>
+
+        <div class="control-panel mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Variable A (rows)</label>
+              <select id="chisqVarA" class="form-select form-select-sm">
+                <option value="gender">Gender</option>
+                <option value="locality">Locality</option>
+                <option value="diabetes_type">Diabetes Type</option>
+                <option value="age_group">Age Group</option>
+                <option value="risk_band">Risk Band</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted">Variable B (columns)</label>
+              <select id="chisqVarB" class="form-select form-select-sm">
+                <option value="risk_band">Risk Band</option>
+                <option value="locality">Locality</option>
+                <option value="gender">Gender</option>
+                <option value="diabetes_type">Diabetes Type</option>
+                <option value="age_group">Age Group</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold text-muted">α level</label>
+              <select id="chisqAlpha" class="form-select form-select-sm">
+                <option value="0.05" selected>0.05</option>
+                <option value="0.01">0.01</option>
+                <option value="0.10">0.10</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <button class="run-btn" onclick="runChiSquare()"><i class="bi bi-play-fill me-1"></i> Run Test</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="chisqResults" class="d-none">
+          <div class="row g-4">
+            <div class="col-lg-5">
+              <div class="d-flex flex-wrap gap-2 mb-3" id="chisqSigBadge"></div>
+              <div class="row g-2 mb-3" id="chisqStatCards"></div>
+              <div id="chisqAssumptions" class="assumption-wrap mb-3"></div>
+              <div id="chisqRecommendation" class="recommendation-box mb-3"></div>
+              <div id="chisqDecisionRule" class="decision-rule-box mb-2"></div>
+              <div class="chart-shell mt-2"><canvas id="chisqCriticalRegionChart"></canvas></div>
+              <div id="chisqContingency" class="table-responsive mt-3"></div>
+            </div>
+            <div class="col-lg-7">
+              <div class="chart-shell"><canvas id="chisqHeatmap"></canvas></div>
+              <div class="chart-shell mt-3"><canvas id="chisqBar"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div id="chisqEmpty" class="empty-state"><i class="bi bi-grid-3x3 fs-1 d-block mb-2 opacity-25"></i>Choose two categorical variables and click <strong>Run Test</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-content -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+'use strict';
+// ============================================================
+// DATA BOOTSTRAP
+// ============================================================
+const analytics = {{ research_analytics_json|safe }};
+const allPatients = (analytics.patients || []).filter(p => p.avg_glucose !== null);
+
+document.getElementById('heroPatientCount').textContent = allPatients.length;
+
+// Populate t-test group selectors on page load
+document.getElementById('ttestGroupVar').addEventListener('change', populateTTestGroups);
+populateTTestGroups();
+
+let ttestState = null;
+let anovaState = null;
+let pearsonState = null;
+let regressionState = null;
+
+document.getElementById('ttestQqDist').addEventListener('change', () => { if (ttestState) renderTTestResults(ttestState); });
+document.getElementById('anovaQqDist').addEventListener('change', () => { if (anovaState) renderANOVAResults(anovaState); });
+document.getElementById('pearsonQqDist').addEventListener('change', () => { if (pearsonState) renderPearsonResults(pearsonState); });
+document.getElementById('regressionQqDist').addEventListener('change', () => { if (regressionState) renderRegressionResults(regressionState); });
+
+function getGroupValues(varName) {
+  const vals = allPatients.map(p => p[varName]).filter(v => v);
+  return [...new Set(vals)].sort();
+}
+
+function populateTTestGroups() {
+  const varName = document.getElementById('ttestGroupVar').value;
+  const vals = getGroupValues(varName);
+  const selA = document.getElementById('ttestGroupA');
+  const selB = document.getElementById('ttestGroupB');
+  selA.innerHTML = ''; selB.innerHTML = '';
+  vals.forEach((v, i) => {
+    selA.add(new Option(v, v));
+    selB.add(new Option(v, v));
+  });
+  if (vals.length > 1) selB.selectedIndex = 1;
+}
+
+// ============================================================
+// STATISTICS LIBRARY
+// ============================================================
+function lgamma(z) {
+  const c = [0.99999999999980993,676.5203681218851,-1259.1392167224028,
+    771.32342877765313,-176.61502916214059,12.507343278686905,
+    -0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+  z -= 1;
+  let x = c[0];
+  for (let i = 1; i < 9; i++) x += c[i] / (z + i);
+  const t = z + 7.5;
+  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+}
+
+function betacf(x, a, b) {
+  const MAXIT = 200, EPS = 3e-7, FPMIN = 1e-30;
+  const qab = a + b, qap = a + 1, qam = a - 1;
+  let c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN;
+  d = 1 / d; let h = d;
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m;
+    let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; const del = d * c; h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+  return h;
+}
+
+function ibeta(x, a, b) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const lbeta = lgamma(a) + lgamma(b) - lgamma(a + b);
+  const bt = Math.exp(-lbeta + a * Math.log(x) + b * Math.log(1 - x));
+  if (x < (a + 1) / (a + b + 2)) return bt * betacf(x, a, b) / a;
+  return 1 - bt * betacf(1 - x, b, a) / b;
+}
+
+function tPValue(t, df) {
+  if (isNaN(t) || isNaN(df) || df <= 0) return 1;
+  const x = df / (df + t * t);
+  return Math.min(1, ibeta(x, df / 2, 0.5));
+}
+
+function fPValue(F, df1, df2) {
+  if (isNaN(F) || F < 0 || df1 <= 0 || df2 <= 0) return 1;
+  const x = df2 / (df2 + df1 * F);
+  return Math.min(1, ibeta(x, df2 / 2, df1 / 2));
+}
+
+function gamser(a, x) {
+  if (x <= 0) return 0;
+  let ap = a, sum = 1 / a, del = 1 / a;
+  for (let n = 1; n <= 200; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 3e-7) break; }
+  return sum * Math.exp(-x + a * Math.log(x) - lgamma(a));
+}
+
+function gammacf(a, x) {
+  const FPMIN = 1e-30;
+  let b = x + 1 - a, c = 1 / FPMIN, d = 1 / b, h = d;
+  for (let i = 1; i <= 200; i++) {
+    const an = -i * (i - a);
+    b += 2; d = an * d + b; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; const del = d * c; h *= del;
+    if (Math.abs(del - 1) < 3e-7) break;
+  }
+  return Math.exp(-x + a * Math.log(x) - lgamma(a)) * h;
+}
+
+function gammainc(a, x) {
+  if (x < 0) return 0; if (x === 0) return 0;
+  return x < a + 1 ? gamser(a, x) : 1 - gammacf(a, x);
+}
+
+function chiSqPValue(chi2, df) {
+  if (chi2 < 0 || df <= 0) return 1;
+  return Math.max(0, 1 - gammainc(df / 2, chi2 / 2));
+}
+
+function inverseTPValue(probability, df, maxT = 20) {
+  let low = 0;
+  let high = maxT;
+  for (let i = 0; i < 60; i += 1) {
+    const mid = (low + high) / 2;
+    const cdf = 1 - tPValue(mid, df) / 2;
+    if (cdf < probability) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return (low + high) / 2;
+}
+
+function inverseFPValue(probability, df1, df2, maxF = 100) {
+  let low = 0;
+  let high = maxF;
+  for (let i = 0; i < 80; i += 1) {
+    const mid = (low + high) / 2;
+    const cdf = 1 - fPValue(mid, df1, df2);
+    if (cdf < probability) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return (low + high) / 2;
+}
+
+function inverseChiSqPValue(probability, df, maxX = 200) {
+  let low = 0;
+  let high = maxX;
+  for (let i = 0; i < 80; i += 1) {
+    const mid = (low + high) / 2;
+    const cdf = 1 - chiSqPValue(mid, df);
+    if (cdf < probability) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return (low + high) / 2;
+}
+
+function drawCriticalRegionChart(canvasId, spec) {
+  const existing = window.__criticalCharts || (window.__criticalCharts = {});
+  if (existing[canvasId]) {
+    existing[canvasId].destroy();
+  }
+
+  const xMin = spec.xMin;
+  const xMax = spec.xMax;
+  const pointCount = 240;
+  const xs = Array.from({ length: pointCount }, (_, idx) => xMin + (idx / (pointCount - 1)) * (xMax - xMin));
+  const ys = xs.map(x => spec.pdf(x));
+  const maxY = Math.max(...ys, 1e-9);
+
+  const nullCurve = xs.map((x, idx) => ({ x, y: ys[idx] }));
+  const criticalCurve = xs
+    .filter(x => spec.isCritical(x))
+    .map(x => ({ x, y: spec.pdf(x) }));
+  const observedLine = [
+    { x: spec.observed, y: 0 },
+    { x: spec.observed, y: maxY * 0.95 },
+  ];
+
+  existing[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Null Distribution',
+          type: 'line',
+          data: nullCurve,
+          borderColor: '#475569',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+        {
+          label: 'Critical Region',
+          type: 'line',
+          data: criticalCurve,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.25)',
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: 'origin',
+        },
+        {
+          label: `Observed ${spec.statLabel}`,
+          type: 'line',
+          data: observedLine,
+          borderColor: '#2563eb',
+          borderWidth: 2,
+          pointRadius: 0,
+          borderDash: [5, 4],
+          fill: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: spec.title, font: { weight: '700' } },
+      },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: spec.axisLabel } },
+        y: { display: false, min: 0 },
+      }
+    }
+  });
+}
+
+function inverseNormalCdf(p) {
+  if (p <= 0 || p >= 1) return p === 0 ? -Infinity : Infinity;
+  const a = [
+    -3.969683028665376e+01,
+    2.209460984245205e+02,
+    -2.759285104469687e+02,
+    1.383577518672690e+02,
+    -3.066479806614716e+01,
+    2.506628277459239e+00,
+  ];
+  const b = [
+    -5.447609879822406e+01,
+    1.615858368580409e+02,
+    -1.556989798598866e+02,
+    6.680131188771972e+01,
+    -1.328068155288572e+01,
+  ];
+  const c = [
+    -7.784894002430293e-03,
+    -3.223964580411365e-01,
+    -2.400758277161838e+00,
+    -2.549732539343734e+00,
+    4.374664141464968e+00,
+    2.938163982698783e+00,
+  ];
+  const d = [
+    7.784695709041462e-03,
+    3.224671290700398e-01,
+    2.445134137142996e+00,
+    3.754408661907416e+00,
+  ];
+  const plow = 0.02425;
+  const phigh = 1 - plow;
+  let q, r;
+  if (p < plow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+      ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+  if (phigh < p) {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -((((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+      ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1));
+  }
+  q = p - 0.5;
+  r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+    (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+const QQ_DISTRIBUTION_LABELS = {
+  normal: 'Normal',
+  exponential: 'Exponential',
+  lognormal: 'Lognormal',
+  uniform: 'Uniform',
+  logistic: 'Logistic',
+};
+const QQ_DISTRIBUTION_OPTIONS = ['normal', 'exponential', 'lognormal', 'uniform', 'logistic'];
+
+function cleanNumeric(values) {
+  return [...values].filter(value => value !== null && value !== undefined && !Number.isNaN(value));
+}
+
+function logisticInvCdf(p, location, scale) {
+  return location + scale * Math.log(p / (1 - p));
+}
+
+function qqDistributionSeries(values, distribution) {
+  const sorted = cleanNumeric(values).sort((left, right) => left - right);
+  const n = sorted.length;
+  if (n < 3) {
+    return {
+      points: [],
+      warning: 'Need at least 3 observations for QQ diagnostics.',
+      distribution: 'normal',
+      xAxis: 'Theoretical Quantiles (Normal)',
+    };
+  }
+
+  let dist = distribution || 'normal';
+  let warning = '';
+  if ((dist === 'exponential' || dist === 'lognormal') && sorted.some(value => value <= 0)) {
+    warning = `${QQ_DISTRIBUTION_LABELS[dist]} requires strictly positive values, so the plot fell back to Normal.`;
+    dist = 'normal';
+  }
+
+  const mean = sorted.reduce((sum, value) => sum + value, 0) / n;
+  const variance = sorted.reduce((sum, value) => sum + (value - mean) ** 2, 0) / Math.max(n - 1, 1);
+  const sd = Math.sqrt(Math.max(variance, 1e-12));
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+
+  let theoreticalQuantiles = [];
+  if (dist === 'normal') {
+    theoreticalQuantiles = sorted.map((_, index) => {
+      const p = (index + 0.5) / n;
+      return mean + sd * inverseNormalCdf(p);
+    });
+  } else if (dist === 'exponential') {
+    const scale = Math.max(mean, 1e-9);
+    theoreticalQuantiles = sorted.map((_, index) => {
+      const p = (index + 0.5) / n;
+      return -scale * Math.log(1 - p);
+    });
+  } else if (dist === 'lognormal') {
+    const logValues = sorted.map(value => Math.log(value));
+    const logMean = logValues.reduce((sum, value) => sum + value, 0) / n;
+    const logVar = logValues.reduce((sum, value) => sum + (value - logMean) ** 2, 0) / Math.max(n - 1, 1);
+    const logSd = Math.sqrt(Math.max(logVar, 1e-12));
+    theoreticalQuantiles = sorted.map((_, index) => {
+      const p = (index + 0.5) / n;
+      return Math.exp(logMean + logSd * inverseNormalCdf(p));
+    });
+  } else if (dist === 'uniform') {
+    const width = Math.max(max - min, 1e-9);
+    theoreticalQuantiles = sorted.map((_, index) => {
+      const p = (index + 0.5) / n;
+      return min + p * width;
+    });
+  } else if (dist === 'logistic') {
+    const scale = Math.max(sd * Math.sqrt(3) / Math.PI, 1e-9);
+    theoreticalQuantiles = sorted.map((_, index) => {
+      const p = (index + 0.5) / n;
+      return logisticInvCdf(p, mean, scale);
+    });
+  } else {
+    warning = 'Unknown QQ distribution selected, so the plot fell back to Normal.';
+    theoreticalQuantiles = sorted.map((_, index) => {
+      const p = (index + 0.5) / n;
+      return mean + sd * inverseNormalCdf(p);
+    });
+    dist = 'normal';
+  }
+
+  return {
+    points: sorted.map((value, index) => ({ x: theoreticalQuantiles[index], y: value })),
+    warning,
+    distribution: dist,
+    xAxis: `Theoretical Quantiles (${QQ_DISTRIBUTION_LABELS[dist]})`,
+  };
+}
+
+function qqIdentityLine(seriesList) {
+  const points = seriesList.flat();
+  if (!points.length) return [];
+  const xValues = points.map(point => point.x);
+  const yValues = points.map(point => point.y);
+  const low = Math.min(...xValues, ...yValues);
+  const high = Math.max(...xValues, ...yValues);
+  return [
+    { x: low, y: low },
+    { x: high, y: high },
+  ];
+}
+
+function qqFitScore(points) {
+  if (!points || points.length < 3) return null;
+  const errors = points.map(point => point.y - point.x);
+  const mse = errors.reduce((sum, value) => sum + value ** 2, 0) / points.length;
+  const rmse = Math.sqrt(mse);
+  const ys = points.map(point => point.y);
+  const yMean = ys.reduce((sum, value) => sum + value, 0) / ys.length;
+  const ySd = Math.sqrt(ys.reduce((sum, value) => sum + (value - yMean) ** 2, 0) / Math.max(ys.length - 1, 1));
+  const yRange = Math.max(...ys) - Math.min(...ys);
+  const scale = Math.max(ySd, yRange / 6, 1e-9);
+  const normalized = rmse / scale;
+  return 1 / (1 + normalized);
+}
+
+function bestQqFitForValues(values) {
+  const cleaned = cleanNumeric(values);
+  if (cleaned.length < 3) return null;
+
+  let best = null;
+  QQ_DISTRIBUTION_OPTIONS.forEach(dist => {
+    if ((dist === 'exponential' || dist === 'lognormal') && cleaned.some(value => value <= 0)) {
+      return;
+    }
+    const qq = qqDistributionSeries(cleaned, dist);
+    if (!qq.points.length) return;
+    const score = qqFitScore(qq.points);
+    if (score === null) return;
+    if (!best || score > best.score) {
+      best = { distribution: qq.distribution, score };
+    }
+  });
+
+  return best;
+}
+
+function bestFitText(bestFit) {
+  if (!bestFit) return 'Best-fit suggestion unavailable (insufficient data).';
+  return `Best-fit suggestion: ${QQ_DISTRIBUTION_LABELS[bestFit.distribution]} (score ${fmt(bestFit.score, 3)}).`;
+}
+
+// ============================================================
+// DESCRIPTIVE STATS
+// ============================================================
+function descStats(vals) {
+  const n = vals.length;
+  if (n === 0) return { n: 0, mean: null, variance: null, sd: null, min: null, q1: null, median: null, q3: null, max: null };
+  const sorted = [...vals].sort((a, b) => a - b);
+  const mean = vals.reduce((s, v) => s + v, 0) / n;
+  const variance = n > 1 ? vals.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
+  const sd = Math.sqrt(variance);
+  const q = (arr, p) => { const idx = p * (arr.length - 1); const lo = Math.floor(idx); const hi = Math.ceil(idx); return arr[lo] + (idx - lo) * (arr[hi] - arr[lo]); };
+  return { n, mean, variance, sd, min: sorted[0], q1: q(sorted, 0.25), median: q(sorted, 0.5), q3: q(sorted, 0.75), max: sorted[sorted.length - 1] };
+}
+
+function skewness(vals) {
+  const n = vals.length;
+  if (n < 3) return null;
+  const mean = vals.reduce((sum, value) => sum + value, 0) / n;
+  const diffs = vals.map(value => value - mean);
+  const m2 = diffs.reduce((sum, value) => sum + value ** 2, 0) / n;
+  const m3 = diffs.reduce((sum, value) => sum + value ** 3, 0) / n;
+  if (m2 === 0) return 0;
+  return m3 / Math.pow(m2, 1.5);
+}
+
+function pearsonCorrelation(xs, ys) {
+  if (!xs.length || xs.length !== ys.length) return null;
+  const n = xs.length;
+  const mx = xs.reduce((sum, value) => sum + value, 0) / n;
+  const my = ys.reduce((sum, value) => sum + value, 0) / n;
+  const sxy = xs.reduce((sum, value, index) => sum + (value - mx) * (ys[index] - my), 0);
+  const sxx = xs.reduce((sum, value) => sum + (value - mx) ** 2, 0);
+  const syy = ys.reduce((sum, value) => sum + (value - my) ** 2, 0);
+  if (sxx === 0 || syy === 0) return 0;
+  return sxy / Math.sqrt(sxx * syy);
+}
+
+function rankArray(values) {
+  const indexed = values.map((value, index) => ({ value, index })).sort((left, right) => left.value - right.value);
+  const ranks = new Array(values.length);
+  let cursor = 0;
+  while (cursor < indexed.length) {
+    let end = cursor;
+    while (end < indexed.length && indexed[end].value === indexed[cursor].value) end += 1;
+    const averageRank = (cursor + end - 1) / 2 + 1;
+    for (let position = cursor; position < end; position += 1) {
+      ranks[indexed[position].index] = averageRank;
+    }
+    cursor = end;
+  }
+  return ranks;
+}
+
+function spearmanCorrelation(xs, ys) {
+  return pearsonCorrelation(rankArray(xs), rankArray(ys));
+}
+
+function outlierCount(values) {
+  if (values.length < 4) return 0;
+  const stats = descStats(values);
+  const iqr = stats.q3 - stats.q1;
+  const lower = stats.q1 - 1.5 * iqr;
+  const upper = stats.q3 + 1.5 * iqr;
+  return values.filter(value => value < lower || value > upper).length;
+}
+
+function evaluateAssumption(status, title, detail) {
+  return { status, title, detail };
+}
+
+function statusLabel(status) {
+  if (status === 'pass') return 'Looks acceptable';
+  if (status === 'warn') return 'Use caution';
+  return 'Potential problem';
+}
+
+function statusIcon(status) {
+  if (status === 'pass') return 'bi-check-circle-fill';
+  if (status === 'warn') return 'bi-exclamation-triangle-fill';
+  return 'bi-x-circle-fill';
+}
+
+function renderAssumptions(targetId, items, note) {
+  const severityOrder = { pass: 0, warn: 1, fail: 2 };
+  items.sort((left, right) => severityOrder[left.status] - severityOrder[right.status]);
+  document.getElementById(targetId).innerHTML = `
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+      <div class="stat-label mb-0">Assumption Screen</div>
+      <span class="text-muted" style="font-size:0.72rem;">Screening, not proof</span>
+    </div>
+    <div class="assumption-grid">
+      ${items.map(item => `
+        <div class="assumption-card">
+          <div class="assumption-status assumption-${item.status}"><i class="bi ${statusIcon(item.status)}"></i>${statusLabel(item.status)}</div>
+          <h4>${item.title}</h4>
+          <p>${item.detail}</p>
+        </div>`).join('')}
+    </div>
+    <div class="assumption-note">${note}</div>`;
+}
+
+function renderRecommendation(targetId, tone, headline, detail) {
+  const tones = {
+    ok: { bg: '#eff6ff', border: '#bfdbfe', text: '#1e3a8a', strong: '#1d4ed8' },
+    caution: { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412', strong: '#c2410c' },
+    avoid: { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', strong: '#b91c1c' },
+  };
+  const palette = tones[tone] || tones.ok;
+  const element = document.getElementById(targetId);
+  element.style.background = palette.bg;
+  element.style.borderColor = palette.border;
+  element.style.color = palette.text;
+  element.innerHTML = `<strong style="color:${palette.strong};">${headline}</strong> ${detail}`;
+}
+
+function summarizeAssumptionStatuses(items) {
+  if (items.some(item => item.status === 'fail')) return 'avoid';
+  if (items.some(item => item.status === 'warn')) return 'caution';
+  return 'ok';
+}
+
+// ============================================================
+// T-TEST
+// ============================================================
+let ttestChartInst = null, ttestDistInst = null, ttestQqInst = null;
+
+function runTTest() {
+  const groupVar = document.getElementById('ttestGroupVar').value;
+  const groupA = document.getElementById('ttestGroupA').value;
+  const groupB = document.getElementById('ttestGroupB').value;
+  const numVar = document.getElementById('ttestNumVar').value;
+  const alpha = parseFloat(document.getElementById('ttestAlpha').value);
+
+  if (groupA === groupB) { alert('Please select two different groups.'); return; }
+
+  const valsA = allPatients.filter(p => p[groupVar] === groupA && p[numVar] !== null).map(p => p[numVar]);
+  const valsB = allPatients.filter(p => p[groupVar] === groupB && p[numVar] !== null).map(p => p[numVar]);
+
+  if (valsA.length < 2 || valsB.length < 2) { alert('Insufficient data for one or both groups (need ≥ 2 per group).'); return; }
+
+  const sA = descStats(valsA), sB = descStats(valsB);
+  const se = Math.sqrt(sA.variance / sA.n + sB.variance / sB.n);
+  const t = (sA.mean - sB.mean) / se;
+  const df = (sA.variance / sA.n + sB.variance / sB.n) ** 2 /
+    ((sA.variance / sA.n) ** 2 / (sA.n - 1) + (sB.variance / sB.n) ** 2 / (sB.n - 1));
+  const p = tPValue(Math.abs(t), df);
+  const cohensD = Math.abs(sA.mean - sB.mean) / Math.sqrt(((sA.n - 1) * sA.variance + (sB.n - 1) * sB.variance) / (sA.n + sB.n - 2));
+  const skewA = skewness(valsA);
+  const skewB = skewness(valsB);
+  const varianceRatio = Math.max(sA.variance || 0, sB.variance || 0) / Math.max(Math.min(sA.variance || 0, sB.variance || 0), 1e-9);
+  const assumptions = [
+    evaluateAssumption(
+      (sA.n >= 8 && sB.n >= 8) ? 'pass' : (sA.n >= 5 && sB.n >= 5 ? 'warn' : 'fail'),
+      'Adequate sample size per group',
+      `Group sizes are n=${sA.n} and n=${sB.n}. Smaller groups make the t-test sensitive to non-normality.`
+    ),
+    evaluateAssumption(
+      (Math.abs(skewA ?? 0) <= 1.5 && Math.abs(skewB ?? 0) <= 1.5) ? 'pass' : (Math.abs(skewA ?? 0) <= 2 && Math.abs(skewB ?? 0) <= 2 ? 'warn' : 'fail'),
+      'Approximate within-group symmetry',
+      `Screened with skewness: Group A = ${fmt(skewA, 2)}, Group B = ${fmt(skewB, 2)}. Severe asymmetry weakens parametric inference.`
+    ),
+    evaluateAssumption(
+      varianceRatio <= 2 ? 'pass' : (varianceRatio <= 4 ? 'warn' : 'fail'),
+      'Variance compatibility',
+      `Variance ratio is ${fmt(varianceRatio, 2)}. Welch's t-test is robust here, but extreme spread differences still deserve caution.`
+    ),
+    evaluateAssumption(
+      'warn',
+      'Independence of observations',
+      'This cannot be verified from the dataset alone. It depends on study design and whether patients contribute only one independent observation to each group.'
+    ),
+  ];
+
+  const numLabel = document.getElementById('ttestNumVar').options[document.getElementById('ttestNumVar').selectedIndex].text;
+  ttestState = { t, df, p, cohensD, alpha, sA, sB, groupA, groupB, valsA, valsB, numLabel, assumptions };
+  renderTTestResults(ttestState);
+}
+
+function renderTTestResults({ t, df, p, cohensD, alpha, sA, sB, groupA, groupB, valsA, valsB, numLabel, assumptions }) {
+  document.getElementById('ttestEmpty').classList.add('d-none');
+  document.getElementById('ttestResults').classList.remove('d-none');
+
+  const sig = p < alpha;
+  const sigClass = p < 0.01 ? 'sig' : p < alpha ? 'sig' : p < 0.10 ? 'marginal' : 'not-sig';
+  const sigText = p < 0.01 ? 'Highly Significant (p < 0.01)' : p < alpha ? `Significant (p < ${alpha})` : p < 0.10 ? 'Marginal (p < 0.10)' : 'Not Significant';
+  const tCritical = inverseTPValue(1 - alpha / 2, df);
+  const reject = Math.abs(t) > tCritical;
+
+  document.getElementById('ttestSigBadge').innerHTML = `
+    <span class="result-badge ${sigClass}">${sigText}</span>
+    <span class="result-badge" style="background:#f1f5f9;color:#475569;">Two-tailed</span>
+    <span class="result-badge" style="background:#f1f5f9;color:#475569;">Welch's t-test</span>`;
+
+  document.getElementById('ttestStatCards').innerHTML = makeStatCards([
+    ['t-statistic', fmt(t, 4)], ['Degrees of Freedom', fmt(df, 2)],
+    ['p-value', fmtP(p)], ['n (Group A)', sA.n], ['n (Group B)', sB.n]
+  ]);
+
+  const dLabel = cohensD < 0.2 ? 'Negligible' : cohensD < 0.5 ? 'Small' : cohensD < 0.8 ? 'Medium' : 'Large';
+  const dPct = Math.min(100, cohensD / 2 * 100);
+  document.getElementById('ttestEffectBar').style.width = dPct + '%';
+  document.getElementById('ttestEffectLabel').textContent = `d = ${fmt(cohensD, 3)} (${dLabel})`;
+  document.getElementById('ttestEffectText').textContent = cohensD < 0.2 ? 'The effect is negligible.' :
+    cohensD < 0.5 ? 'The effect size is small.' : cohensD < 0.8 ? 'The effect size is medium.' : 'The effect size is large.';
+  renderAssumptions('ttestAssumptions', assumptions, 'The t-test needs independent groups, approximately symmetric within-group distributions, and enough data for the sampling distribution of the mean difference to stabilize.');
+  const ttestTone = summarizeAssumptionStatuses(assumptions);
+  if (ttestTone === 'avoid') {
+    renderRecommendation('ttestRecommendation', 'avoid', 'Parametric result is fragile.', 'At least one core screening check failed. Prefer a Mann-Whitney U test or re-specify the grouping before using this p-value for a claim.');
+  } else if (ttestTone === 'caution') {
+    renderRecommendation('ttestRecommendation', 'caution', 'Interpret with caution.', 'Welch helps with variance imbalance, but small samples or skewed groups still weaken the inference. Consider confirming with a non-parametric sensitivity check.');
+  } else {
+    renderRecommendation('ttestRecommendation', 'ok', 'Assumptions look serviceable.', 'The screening checks do not show a major reason to reject Welch’s t-test for this comparison.');
+  }
+  document.getElementById('ttestDecisionRule').innerHTML = `<strong>Decision Rule:</strong> Reject H  if |t| > t* = ${fmt(tCritical, 3)} (two-tailed, α=${alpha}). Observed |t|=${fmt(Math.abs(t), 3)}  <strong>${reject ? 'Reject H ' : 'Fail to reject H '}</strong>.`;
+  drawCriticalRegionChart('ttestCriticalRegionChart', {
+    xMin: -Math.max(5, tCritical * 1.45, Math.abs(t) * 1.25),
+    xMax: Math.max(5, tCritical * 1.45, Math.abs(t) * 1.25),
+    pdf: x => 1 / Math.sqrt(2 * Math.PI) * Math.exp(-0.5 * x * x),
+    isCritical: x => Math.abs(x) >= tCritical,
+    observed: t,
+    statLabel: 't',
+    title: 'Critical Region Sketch (Two-Tailed t Test)',
+    axisLabel: 't statistic',
+  });
+
+  document.getElementById('ttestGroupStats').innerHTML = `
+    <table class="table table-sm small">
+      <thead class="table-light"><tr><th>Group</th><th>n</th><th>Mean</th><th>SD</th><th>Median</th></tr></thead>
+      <tbody>
+        <tr><td><strong>${groupA}</strong></td><td>${sA.n}</td><td>${fmt(sA.mean,2)}</td><td>${fmt(sA.sd,2)}</td><td>${fmt(sA.median,2)}</td></tr>
+        <tr><td><strong>${groupB}</strong></td><td>${sB.n}</td><td>${fmt(sB.mean,2)}</td><td>${fmt(sB.sd,2)}</td><td>${fmt(sB.median,2)}</td></tr>
+      </tbody>
+    </table>`;
+
+  const tDist = document.getElementById('ttestQqDist').value;
+  const tQqA = qqDistributionSeries(valsA, tDist);
+  const tQqB = qqDistributionSeries(valsB, tDist);
+  const tQqLine = qqIdentityLine([tQqA.points, tQqB.points]);
+  const tQqWarnings = [tQqA.warning, tQqB.warning].filter(Boolean).join(' ');
+  const tBest = bestQqFitForValues([...valsA, ...valsB]);
+  document.getElementById('ttestQqMeta').textContent = tQqWarnings || `Displayed against ${QQ_DISTRIBUTION_LABELS[tQqA.distribution]} theoretical quantiles. ${bestFitText(tBest)}`;
+
+  if (ttestQqInst) ttestQqInst.destroy();
+  ttestQqInst = new Chart(document.getElementById('ttestQqPlot'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: `${groupA} QQ (${QQ_DISTRIBUTION_LABELS[tQqA.distribution]})`,
+          data: tQqA.points,
+          backgroundColor: 'rgba(99,102,241,0.75)',
+          borderColor: '#6366f1',
+          pointRadius: 4,
+        },
+        {
+          label: `${groupB} QQ (${QQ_DISTRIBUTION_LABELS[tQqB.distribution]})`,
+          data: tQqB.points,
+          backgroundColor: 'rgba(244,114,182,0.75)',
+          borderColor: '#f472b6',
+          pointRadius: 4,
+        },
+        {
+          label: '45° Reference',
+          type: 'line',
+          data: tQqLine,
+          borderColor: '#ef4444',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: 'QQ Plot: Within-Group Distribution Check', font: { weight: '700' } },
+      },
+      scales: {
+        x: { title: { display: true, text: tQqA.xAxis } },
+        y: { title: { display: true, text: numLabel } },
+      }
+    }
+  });
+
+  // Chart: Mean + CI bar chart
+  if (ttestChartInst) ttestChartInst.destroy();
+  const ciA = 1.96 * sA.sd / Math.sqrt(sA.n);
+  const ciB = 1.96 * sB.sd / Math.sqrt(sB.n);
+  ttestChartInst = new Chart(document.getElementById('ttestChart'), {
+    type: 'bar',
+    data: {
+      labels: [groupA, groupB],
+      datasets: [{
+        label: numLabel,
+        data: [sA.mean, sB.mean],
+        backgroundColor: ['rgba(99,102,241,0.7)', 'rgba(244,114,182,0.7)'],
+        borderColor: ['#6366f1', '#f472b6'],
+        borderWidth: 2, borderRadius: 8,
+        errorBarPlus: [ciA, ciB],
+        errorBarMinus: [ciA, ciB],
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, title: { display: true, text: `Group Means ± 95% CI — ${numLabel}`, font: { weight: '700' } } },
+      scales: { y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } } }
+    }
+  });
+
+  // Distribution chart (KDE approximation using bars)
+  if (ttestDistInst) ttestDistInst.destroy();
+  const allVals = [...valsA, ...valsB];
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  const bins = 20;
+  const bw = (mx - mn) / bins || 1;
+  const labelsB = [], countsA = [], countsB = [];
+  for (let i = 0; i < bins; i++) {
+    const lo = mn + i * bw, hi = lo + bw;
+    labelsB.push(fmt(lo + bw / 2, 1));
+    countsA.push(valsA.filter(v => v >= lo && v < hi).length);
+    countsB.push(valsB.filter(v => v >= lo && v < hi).length);
+  }
+  ttestDistInst = new Chart(document.getElementById('ttestDist'), {
+    type: 'bar',
+    data: {
+      labels: labelsB,
+      datasets: [
+        { label: groupA, data: countsA, backgroundColor: 'rgba(99,102,241,0.55)', borderColor: '#6366f1', borderWidth: 1, borderRadius: 3 },
+        { label: groupB, data: countsB, backgroundColor: 'rgba(244,114,182,0.55)', borderColor: '#f472b6', borderWidth: 1, borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'top' }, title: { display: true, text: `Distribution of ${numLabel} by Group`, font: { weight: '700' } } },
+      scales: { x: { stacked: false }, y: { stacked: false, title: { display: true, text: 'Count' } } }
+    }
+  });
+}
+
+// ============================================================
+// ANOVA
+// ============================================================
+let anovaChartInst = null, anovaBoxInst = null, anovaQqInst = null;
+
+function runANOVA() {
+  const groupVar = document.getElementById('anovaGroupVar').value;
+  const numVar = document.getElementById('anovaNumVar').value;
+  const alpha = parseFloat(document.getElementById('anovaAlpha').value);
+
+  const grouped = {};
+  allPatients.forEach(p => {
+    const g = p[groupVar]; const v = p[numVar];
+    if (g && v !== null) { if (!grouped[g]) grouped[g] = []; grouped[g].push(v); }
+  });
+  const groups = Object.entries(grouped).filter(([, vals]) => vals.length >= 2);
+  if (groups.length < 2) { alert('Need at least 2 groups with 2+ data points each.'); return; }
+
+  const allVals = groups.flatMap(([, vals]) => vals);
+  const N = allVals.length;
+  const grandMean = allVals.reduce((s, v) => s + v, 0) / N;
+  const k = groups.length;
+
+  let ssBetween = 0, ssWithin = 0;
+  const groupStats = groups.map(([name, vals]) => {
+    const s = descStats(vals);
+    ssBetween += vals.length * (s.mean - grandMean) ** 2;
+    ssWithin += vals.reduce((acc, v) => acc + (v - s.mean) ** 2, 0);
+    return { name, ...s };
+  });
+
+  const df1 = k - 1, df2 = N - k;
+  const msBetween = ssBetween / df1, msWithin = ssWithin / df2;
+  const F = msBetween / msWithin;
+  const p = fPValue(F, df1, df2);
+  const eta2 = ssBetween / (ssBetween + ssWithin);
+  const groupSizes = groupStats.map(group => group.n);
+  const groupSkews = groupStats.map(group => skewness(grouped[group.name]));
+  const variances = groupStats.map(group => group.variance).filter(value => value !== null && value > 0);
+  const varianceRatio = variances.length ? Math.max(...variances) / Math.max(Math.min(...variances), 1e-9) : 0;
+  const assumptions = [
+    evaluateAssumption(
+      Math.min(...groupSizes) >= 8 ? 'pass' : (Math.min(...groupSizes) >= 5 ? 'warn' : 'fail'),
+      'Minimum group size',
+      `Smallest group size is n=${Math.min(...groupSizes)} across ${k} groups. ANOVA is more stable when each group is not tiny.`
+    ),
+    evaluateAssumption(
+      groupSkews.every(value => Math.abs(value ?? 0) <= 1.5) ? 'pass' : (groupSkews.every(value => Math.abs(value ?? 0) <= 2) ? 'warn' : 'fail'),
+      'Approximate group normality',
+      `Screened with skewness across groups: ${groupStats.map((group, index) => `${group.name} ${fmt(groupSkews[index], 2)}`).join(', ')}.`
+    ),
+    evaluateAssumption(
+      varianceRatio <= 2 ? 'pass' : (varianceRatio <= 4 ? 'warn' : 'fail'),
+      'Homogeneity of variance',
+      `Largest-to-smallest variance ratio is ${fmt(varianceRatio, 2)}. Strong imbalance suggests Welch ANOVA or a non-parametric alternative.`
+    ),
+    evaluateAssumption(
+      'warn',
+      'Independence of observations',
+      'This depends on study design rather than the calculation itself. Repeated measurements or clustered observations would violate standard ANOVA assumptions.'
+    ),
+  ];
+  const numLabel = document.getElementById('anovaNumVar').options[document.getElementById('anovaNumVar').selectedIndex].text;
+  const residuals = [];
+  groupStats.forEach(group => {
+    (grouped[group.name] || []).forEach(value => residuals.push(value - group.mean));
+  });
+
+  anovaState = { F, df1, df2, p, eta2, alpha, groupStats, numLabel, ssBetween, ssWithin, msBetween, msWithin, N, assumptions, residuals };
+  renderANOVAResults(anovaState);
+}
+
+function renderANOVAResults({ F, df1, df2, p, eta2, alpha, groupStats, numLabel, ssBetween, ssWithin, msBetween, msWithin, N, assumptions, residuals }) {
+  document.getElementById('anovaEmpty').classList.add('d-none');
+  document.getElementById('anovaResults').classList.remove('d-none');
+
+  const sigClass = p < 0.01 ? 'sig' : p < alpha ? 'sig' : p < 0.10 ? 'marginal' : 'not-sig';
+  const sigText = p < 0.01 ? 'Highly Significant (p < 0.01)' : p < alpha ? `Significant (p < ${alpha})` : p < 0.10 ? 'Marginal (p < 0.10)' : 'Not Significant';
+  const fCritical = inverseFPValue(1 - alpha, df1, df2);
+  const reject = F > fCritical;
+
+  document.getElementById('anovaSigBadge').innerHTML = `
+    <span class="result-badge ${sigClass}">${sigText}</span>
+    <span class="result-badge" style="background:#f1f5f9;color:#475569;">One-Way ANOVA</span>`;
+
+  document.getElementById('anovaStatCards').innerHTML = makeStatCards([
+    ['F-statistic', fmt(F, 4)], ['df₁ (between)', df1], ['df₂ (within)', df2],
+    ['p-value', fmtP(p)], ['N total', N]
+  ]);
+
+  const etaLabel = eta2 < 0.01 ? 'Negligible' : eta2 < 0.06 ? 'Small' : eta2 < 0.14 ? 'Medium' : 'Large';
+  document.getElementById('anovaEffectBar').style.width = Math.min(100, eta2 * 100) + '%';
+  document.getElementById('anovaEffectLabel').textContent = `η² = ${fmt(eta2, 4)} (${etaLabel})`;
+  document.getElementById('anovaEffectText').textContent = `η² explains ${fmt(eta2 * 100, 1)}% of the variance in ${numLabel} across groups.`;
+  renderAssumptions('anovaAssumptions', assumptions, 'One-way ANOVA assumes independent groups, roughly normal residual structure inside each group, and comparable within-group variances.');
+  const anovaTone = summarizeAssumptionStatuses(assumptions);
+  if (anovaTone === 'avoid') {
+    renderRecommendation('anovaRecommendation', 'avoid', 'ANOVA assumptions are strained.', 'At least one screening check failed. Prefer Welch ANOVA when variances differ, or Kruskal-Wallis when shapes are clearly non-normal and group sizes are small.');
+  } else if (anovaTone === 'caution') {
+    renderRecommendation('anovaRecommendation', 'caution', 'ANOVA may be usable but needs backup.', 'The result can be reported as exploratory, but confirm it with Welch ANOVA or a rank-based alternative if decisions depend on it.');
+  } else {
+    renderRecommendation('anovaRecommendation', 'ok', 'ANOVA assumptions look acceptable.', 'The current grouping passes the screening checks well enough for a standard one-way ANOVA reading.');
+  }
+  document.getElementById('anovaDecisionRule').innerHTML = `<strong>Decision Rule:</strong> Reject H  if F > F* = ${fmt(fCritical, 3)} (right-tailed, α=${alpha}, df₁=${df1}, df₂=${df2}). Observed F=${fmt(F, 3)}  <strong>${reject ? 'Reject H ' : 'Fail to reject H '}</strong>.`;
+  drawCriticalRegionChart('anovaCriticalRegionChart', {
+    xMin: 0,
+    xMax: Math.max(10, fCritical * 1.5, F * 1.2),
+    pdf: x => Math.exp(-x / 2),
+    isCritical: x => x >= fCritical,
+    observed: F,
+    statLabel: 'F',
+    title: 'Critical Region Sketch (Right-Tailed F Test)',
+    axisLabel: 'F statistic',
+  });
+
+  document.getElementById('anovaGroupTable').innerHTML = `
+    <div class="small fw-semibold text-muted mb-1" style="font-size:0.7rem; text-transform:uppercase;">ANOVA Table</div>
+    <table class="table table-sm small">
+      <thead class="table-light"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th></tr></thead>
+      <tbody>
+        <tr><td>Between</td><td>${fmt(ssBetween,2)}</td><td>${df1}</td><td>${fmt(msBetween,2)}</td><td>${fmt(F,4)}</td></tr>
+        <tr><td>Within</td><td>${fmt(ssWithin,2)}</td><td>${df2}</td><td>${fmt(msWithin,2)}</td><td></td></tr>
+        <tr class="table-active fw-semibold"><td>Total</td><td>${fmt(ssBetween+ssWithin,2)}</td><td>${df1+df2}</td><td></td><td></td></tr>
+      </tbody>
+    </table>`;
+
+  const aDist = document.getElementById('anovaQqDist').value;
+  const aQq = qqDistributionSeries(residuals, aDist);
+  const aLine = qqIdentityLine([aQq.points]);
+  const aBest = bestQqFitForValues(residuals);
+  document.getElementById('anovaQqMeta').textContent = aQq.warning || `Residuals are compared with ${QQ_DISTRIBUTION_LABELS[aQq.distribution]} quantiles. ${bestFitText(aBest)}`;
+
+  if (anovaQqInst) anovaQqInst.destroy();
+  anovaQqInst = new Chart(document.getElementById('anovaQqPlot'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: `Residual QQ (${QQ_DISTRIBUTION_LABELS[aQq.distribution]})`,
+          data: aQq.points,
+          backgroundColor: 'rgba(16,185,129,0.75)',
+          borderColor: '#10b981',
+          pointRadius: 4,
+        },
+        {
+          label: '45° Reference',
+          type: 'line',
+          data: aLine,
+          borderColor: '#ef4444',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: 'QQ Plot: ANOVA Residual Distribution Check', font: { weight: '700' } },
+      },
+      scales: {
+        x: { title: { display: true, text: aQq.xAxis } },
+        y: { title: { display: true, text: 'Residuals' } },
+      }
+    }
+  });
+
+  const colors = ['rgba(99,102,241,0.7)', 'rgba(16,185,129,0.7)', 'rgba(245,158,11,0.7)', 'rgba(239,68,68,0.7)', 'rgba(168,85,247,0.7)', 'rgba(20,184,166,0.7)', 'rgba(244,114,182,0.7)'];
+  const borderColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#a855f7','#14b8a6','#f472b6'];
+
+  if (anovaChartInst) anovaChartInst.destroy();
+  anovaChartInst = new Chart(document.getElementById('anovaChart'), {
+    type: 'bar',
+    data: {
+      labels: groupStats.map(g => g.name),
+      datasets: [{
+        label: numLabel,
+        data: groupStats.map(g => fmt(g.mean, 2)),
+        backgroundColor: groupStats.map((_, i) => colors[i % colors.length]),
+        borderColor: groupStats.map((_, i) => borderColors[i % borderColors.length]),
+        borderWidth: 2, borderRadius: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, title: { display: true, text: `Group Means — ${numLabel}`, font: { weight: '700' } } },
+      scales: { y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } }, x: { ticks: { maxRotation: 30 } } }
+    }
+  });
+
+  // SD error bars chart (Range: mean ± SD)
+  if (anovaBoxInst) anovaBoxInst.destroy();
+  anovaBoxInst = new Chart(document.getElementById('anovaBoxChart'), {
+    type: 'bar',
+    data: {
+      labels: groupStats.map(g => g.name),
+      datasets: [
+        {
+          label: 'Mean', type: 'bar',
+          data: groupStats.map(g => [fmt(g.mean - g.sd, 2), fmt(g.mean + g.sd, 2)]),
+          backgroundColor: groupStats.map((_, i) => colors[i % colors.length]),
+          borderColor: groupStats.map((_, i) => borderColors[i % borderColors.length]),
+          borderWidth: 2, borderRadius: 4,
+        },
+        {
+          label: 'Median', type: 'scatter',
+          data: groupStats.map((g, i) => ({ x: i, y: g.median })),
+          backgroundColor: '#fff', borderColor: '#1e1b4b',
+          pointStyle: 'rectRot', pointRadius: 7, pointBorderWidth: 2,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'top' }, title: { display: true, text: `IQR-Style Range (Mean ± SD) with Median Marker`, font: { weight: '700' } } },
+      scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' }, title: { display: true, text: numLabel } }, x: { ticks: { maxRotation: 30 } } }
+    }
+  });
+}
+
+// ============================================================
+// PEARSON CORRELATION
+// ============================================================
+let pearsonScatterInst = null, pearsonHeatInst = null, pearsonQqInst = null;
+
+function runPearson() {
+  const xVar = document.getElementById('pearsonX').value;
+  const yVar = document.getElementById('pearsonY').value;
+  const colorVar = document.getElementById('pearsonColor').value;
+
+  const pairs = allPatients.filter(p => p[xVar] !== null && p[yVar] !== null);
+  if (pairs.length < 4) { alert('Insufficient data (need ≥ 4 paired observations).'); return; }
+
+  const xs = pairs.map(p => p[xVar]);
+  const ys = pairs.map(p => p[yVar]);
+  const n = xs.length;
+  const mx = xs.reduce((s, v) => s + v, 0) / n;
+  const my = ys.reduce((s, v) => s + v, 0) / n;
+  const sxy = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0);
+  const sxx = xs.reduce((s, v) => s + (v - mx) ** 2, 0);
+  const syy = ys.reduce((s, v) => s + (v - my) ** 2, 0);
+  const r = sxy / Math.sqrt(sxx * syy);
+  const r2 = r ** 2;
+  const t = r * Math.sqrt(n - 2) / Math.sqrt(1 - r ** 2);
+  const p = tPValue(Math.abs(t), n - 2);
+  const spearman = spearmanCorrelation(xs, ys);
+  const xSkew = skewness(xs);
+  const ySkew = skewness(ys);
+  const pairOutliers = pairs.filter(point => {
+    const xStats = descStats(xs);
+    const yStats = descStats(ys);
+    const xIqr = xStats.q3 - xStats.q1;
+    const yIqr = yStats.q3 - yStats.q1;
+    const xLower = xStats.q1 - 1.5 * xIqr;
+    const xUpper = xStats.q3 + 1.5 * xIqr;
+    const yLower = yStats.q1 - 1.5 * yIqr;
+    const yUpper = yStats.q3 + 1.5 * yIqr;
+    return point[xVar] < xLower || point[xVar] > xUpper || point[yVar] < yLower || point[yVar] > yUpper;
+  }).length;
+  const assumptions = [
+    evaluateAssumption(
+      n >= 12 ? 'pass' : (n >= 8 ? 'warn' : 'fail'),
+      'Paired sample size',
+      `There are n=${n} complete pairs. Very small paired samples make Pearson estimates unstable.`
+    ),
+    evaluateAssumption(
+      Math.abs(xSkew ?? 0) <= 1.5 && Math.abs(ySkew ?? 0) <= 1.5 ? 'pass' : (Math.abs(xSkew ?? 0) <= 2 && Math.abs(ySkew ?? 0) <= 2 ? 'warn' : 'fail'),
+      'Approximate bivariate normality support',
+      `Marginal skewness is X=${fmt(xSkew, 2)} and Y=${fmt(ySkew, 2)}. Heavy skew can distort Pearson's significance test.`
+    ),
+    evaluateAssumption(
+      Math.abs(r - spearman) <= 0.12 ? 'pass' : (Math.abs(r - spearman) <= 0.25 ? 'warn' : 'fail'),
+      'Rough linearity screen',
+      `Pearson r=${fmt(r, 3)} vs Spearman ρ=${fmt(spearman, 3)}. Large gaps suggest monotonic but non-linear structure or outlier influence.`
+    ),
+    evaluateAssumption(
+      pairOutliers === 0 ? 'pass' : (pairOutliers <= Math.max(1, Math.floor(n * 0.1)) ? 'warn' : 'fail'),
+      'Outlier leverage',
+      `${pairOutliers} paired observations sit outside Tukey fences on X or Y. Outliers can dominate Pearson’s r.`
+    ),
+  ];
+
+  const xLabel = document.getElementById('pearsonX').options[document.getElementById('pearsonX').selectedIndex].text;
+  const yLabel = document.getElementById('pearsonY').options[document.getElementById('pearsonY').selectedIndex].text;
+  pearsonState = { r, r2, t, p, n, pairs, xs, ys, xVar, yVar, colorVar, xLabel, yLabel, mx, my, spearman, assumptions };
+  renderPearsonResults(pearsonState);
+}
+
+const PALETTE = ['#6366f1','#10b981','#f59e0b','#ef4444','#a855f7','#14b8a6','#f472b6','#3b82f6','#84cc16'];
+
+function renderPearsonResults({ r, r2, t, p, n, pairs, xs, ys, xVar, yVar, colorVar, xLabel, yLabel, mx, my, spearman, assumptions }) {
+  document.getElementById('pearsonEmpty').classList.add('d-none');
+  document.getElementById('pearsonResults').classList.remove('d-none');
+
+  const alpha = 0.05;
+  const sigClass = p < 0.01 ? 'sig' : p < alpha ? 'sig' : p < 0.10 ? 'marginal' : 'not-sig';
+  const sigText = p < 0.01 ? 'Highly Significant (p < 0.01)' : p < alpha ? 'Significant (p < 0.05)' : p < 0.10 ? 'Marginal (p < 0.10)' : 'Not Significant';
+  const tCritical = inverseTPValue(1 - alpha / 2, n - 2);
+  const reject = Math.abs(t) > tCritical;
+  const dirText = r > 0 ? 'positive' : 'negative';
+  const strText = Math.abs(r) < 0.1 ? 'negligible' : Math.abs(r) < 0.3 ? 'weak' : Math.abs(r) < 0.5 ? 'moderate' : Math.abs(r) < 0.7 ? 'strong' : 'very strong';
+
+  document.getElementById('pearsonSigBadge').innerHTML = `
+    <span class="result-badge ${sigClass}">${sigText}</span>
+    <span class="result-badge" style="background:#f1f5f9;color:#475569;">${strText} ${dirText}</span>`;
+
+  document.getElementById('pearsonStatCards').innerHTML = makeStatCards([
+    ['Pearson r', fmt(r, 4)], ['R² (Variance Explained)', fmt(r2 * 100, 1) + '%'],
+    ['Spearman ρ', fmt(spearman, 4)], ['t-statistic', fmt(t, 4)], ['p-value', fmtP(p)], ['n', n]
+  ]);
+  renderAssumptions('pearsonAssumptions', assumptions, 'Pearson correlation is best when the paired relationship is roughly linear, large outliers are absent, and the variables are not extremely skewed.');
+  const pearsonTone = summarizeAssumptionStatuses(assumptions);
+  if (pearsonTone === 'avoid') {
+    renderRecommendation('pearsonRecommendation', 'avoid', 'Pearson is not the safest summary here.', 'The screening checks suggest non-linearity, skew, or outlier leverage. Prefer Spearman correlation or transform the variables before relying on this p-value.');
+  } else if (pearsonTone === 'caution') {
+    renderRecommendation('pearsonRecommendation', 'caution', 'Interpret Pearson as exploratory.', 'The relationship may still be informative, but compare against Spearman and inspect the scatter plot before making a strong claim.');
+  } else {
+    renderRecommendation('pearsonRecommendation', 'ok', 'Pearson assumptions look serviceable.', 'The linearity and shape screens do not show a major reason to avoid Pearson correlation for this pair.');
+  }
+  document.getElementById('pearsonDecisionRule').innerHTML = `<strong>Decision Rule:</strong> Reject H : ρ=0 if |t| > t* = ${fmt(tCritical, 3)} (two-tailed, α=${alpha}, df=${n - 2}). Observed |t|=${fmt(Math.abs(t), 3)}  <strong>${reject ? 'Reject H ' : 'Fail to reject H '}</strong>.`;
+  drawCriticalRegionChart('pearsonCriticalRegionChart', {
+    xMin: -Math.max(5, tCritical * 1.45, Math.abs(t) * 1.25),
+    xMax: Math.max(5, tCritical * 1.45, Math.abs(t) * 1.25),
+    pdf: x => 1 / Math.sqrt(2 * Math.PI) * Math.exp(-0.5 * x * x),
+    isCritical: x => Math.abs(x) >= tCritical,
+    observed: t,
+    statLabel: 't',
+    title: 'Critical Region Sketch (Two-Tailed Correlation t Test)',
+    axisLabel: 't statistic',
+  });
+
+  // Correlation badge color
+  const hue = r > 0 ? `hsl(${Math.round(220 + r * 40)}, 70%, ${Math.round(50 - Math.abs(r) * 20)}%)` :
+    `hsl(${Math.round(0 + Math.abs(r) * 20)}, 70%, ${Math.round(50 - Math.abs(r) * 20)}%)`;
+  document.getElementById('pearsonCorrViz').innerHTML = `
+    <div class="corr-badge" style="background:${hue};color:#fff;">${fmt(r, 3)}</div>`;
+  document.getElementById('pearsonInterpret').textContent =
+    `${r2 >= 0.01 ? fmt(r2 * 100, 1) + '% of the variance in ' + yLabel + ' is explained by ' + xLabel + '.' : 'Very little variance is shared between these variables.'}`;
+
+  const pDist = document.getElementById('pearsonQqDist').value;
+  const pQqX = qqDistributionSeries(xs, pDist);
+  const pQqY = qqDistributionSeries(ys, pDist);
+  const pLine = qqIdentityLine([pQqX.points, pQqY.points]);
+  const pWarnings = [pQqX.warning, pQqY.warning].filter(Boolean).join(' ');
+  const pBestX = bestQqFitForValues(xs);
+  const pBestY = bestQqFitForValues(ys);
+  document.getElementById('pearsonQqMeta').textContent = pWarnings || `Both variables are compared against ${QQ_DISTRIBUTION_LABELS[pQqX.distribution]} quantiles. X: ${bestFitText(pBestX)} Y: ${bestFitText(pBestY)}`;
+
+  if (pearsonQqInst) pearsonQqInst.destroy();
+  pearsonQqInst = new Chart(document.getElementById('pearsonQqPlot'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: `${xLabel} QQ (${QQ_DISTRIBUTION_LABELS[pQqX.distribution]})`,
+          data: pQqX.points,
+          backgroundColor: 'rgba(99,102,241,0.75)',
+          borderColor: '#6366f1',
+          pointRadius: 4,
+        },
+        {
+          label: `${yLabel} QQ (${QQ_DISTRIBUTION_LABELS[pQqY.distribution]})`,
+          data: pQqY.points,
+          backgroundColor: 'rgba(245,158,11,0.75)',
+          borderColor: '#f59e0b',
+          pointRadius: 4,
+        },
+        {
+          label: '45° Reference',
+          type: 'line',
+          data: pLine,
+          borderColor: '#ef4444',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: 'QQ Plot: Variable Distribution Check', font: { weight: '700' } },
+      },
+      scales: {
+        x: { title: { display: true, text: pQqX.xAxis } },
+        y: { title: { display: true, text: 'Observed Values' } },
+      }
+    }
+  });
+
+  // Scatter chart
+  if (pearsonScatterInst) pearsonScatterInst.destroy();
+
+  let datasets;
+  if (colorVar) {
+    const cats = [...new Set(pairs.map(p => p[colorVar]).filter(Boolean))].sort();
+    datasets = cats.map((cat, ci) => ({
+      label: cat,
+      data: pairs.filter(p => p[colorVar] === cat).map(p => ({ x: p[xVar], y: p[yVar] })),
+      backgroundColor: PALETTE[ci % PALETTE.length] + 'aa',
+      borderColor: PALETTE[ci % PALETTE.length],
+      pointRadius: 5, pointBorderWidth: 1,
+    }));
+  } else {
+    datasets = [{ label: 'Patients', data: pairs.map(p => ({ x: p[xVar], y: p[yVar] })), backgroundColor: 'rgba(99,102,241,0.5)', borderColor: '#6366f1', pointRadius: 5 }];
+  }
+
+  // Regression line
+  const sxx = xs.reduce((s, v) => s + (v - (xs.reduce((a, b) => a + b) / n)) ** 2, 0);
+  const sxy = xs.reduce((s, v, i) => s + (v - (xs.reduce((a, b) => a + b) / n)) * (ys[i] - (ys.reduce((a, b) => a + b) / n)), 0);
+  const b1 = sxy / sxx;
+  const b0 = (ys.reduce((a, b) => a + b) / n) - b1 * (xs.reduce((a, b) => a + b) / n);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  datasets.push({ label: 'Regression Line', type: 'line', data: [{ x: xMin, y: b0 + b1 * xMin }, { x: xMax, y: b0 + b1 * xMax }], borderColor: '#ef4444', borderWidth: 2, pointRadius: 0, fill: false });
+
+  pearsonScatterInst = new Chart(document.getElementById('pearsonScatter'), {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'top' }, title: { display: true, text: `${xLabel} vs ${yLabel}  |  r = ${fmt(r, 4)}, p ${fmtP(p)}`, font: { weight: '700' } } },
+      scales: { x: { title: { display: true, text: xLabel } }, y: { title: { display: true, text: yLabel } } }
+    }
+  });
+
+  // Correlation matrix heatmap (just the pair)
+  if (pearsonHeatInst) pearsonHeatInst.destroy();
+  const numVars = ['avg_glucose', 'stability_score', 'safe_percentage', 'age', 'reading_count'];
+  const numLabels = ['Glucose', 'Stability', 'Safe%', 'Age', 'Readings'];
+  const corrMatrix = numVars.map(v1 => numVars.map(v2 => {
+    const p2 = allPatients.filter(p => p[v1] !== null && p[v2] !== null);
+    if (p2.length < 3) return 0;
+    const x2 = p2.map(p => p[v1]), y2 = p2.map(p => p[v2]);
+    const n2 = x2.length, mx2 = x2.reduce((s, v) => s + v, 0) / n2, my2 = y2.reduce((s, v) => s + v, 0) / n2;
+    const s2 = x2.reduce((s, v, i) => s + (v - mx2) * (y2[i] - my2), 0);
+    const sx = Math.sqrt(x2.reduce((s, v) => s + (v - mx2) ** 2, 0));
+    const sy = Math.sqrt(y2.reduce((s, v) => s + (v - my2) ** 2, 0));
+    return sx * sy > 0 ? s2 / (sx * sy) : 0;
+  }));
+
+  const heatData = [];
+  corrMatrix.forEach((row, ri) => row.forEach((val, ci) => heatData.push({ x: numLabels[ci], y: numLabels[ri], v: val })));
+
+  pearsonHeatInst = new Chart(document.getElementById('pearsonHeatmap'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Correlation',
+        data: heatData.map(d => ({ x: d.x, y: d.y })),
+        backgroundColor: heatData.map(d => corrColor(d.v)),
+        pointStyle: 'rect', pointRadius: 22, pointBorderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true, aspectRatio: 1.3,
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: 'Correlation Matrix (All Numeric Variables)', font: { weight: '700' } },
+        tooltip: { callbacks: { label: (ctx) => `r = ${fmt(heatData[ctx.dataIndex].v, 3)}` } }
+      },
+      scales: {
+        x: { type: 'category', labels: numLabels, offset: true, grid: { display: false } },
+        y: { type: 'category', labels: [...numLabels].reverse(), offset: true, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function corrColor(r) {
+  const t = Math.max(-1, Math.min(1, r));
+  if (t >= 0) { const g = Math.round(255 * (1 - t)), b = Math.round(255 * (1 - t)); return `rgba(${g},${g},255,0.8)`; }
+  const rb = Math.round(255 * (1 + t)); return `rgba(255,${rb},${rb},0.8)`;
+}
+
+// ============================================================
+// LINEAR REGRESSION
+// ============================================================
+let regScatterInst = null, regResidInst = null, regQqInst = null;
+
+function runRegression() {
+  const xVar = document.getElementById('regX').value;
+  const yVar = document.getElementById('regY').value;
+
+  const pairs = allPatients.filter(p => p[xVar] !== null && p[yVar] !== null);
+  if (pairs.length < 4) { alert('Insufficient data (need ≥ 4 observations).'); return; }
+
+  const xs = pairs.map(p => p[xVar]);
+  const ys = pairs.map(p => p[yVar]);
+  const n = xs.length;
+  const mx = xs.reduce((s, v) => s + v, 0) / n;
+  const my = ys.reduce((s, v) => s + v, 0) / n;
+  const sxy = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0);
+  const sxx = xs.reduce((s, v) => s + (v - mx) ** 2, 0);
+  const b1 = sxy / sxx;
+  const b0 = my - b1 * mx;
+  const yHat = xs.map(x => b0 + b1 * x);
+  const residuals = ys.map((y, i) => y - yHat[i]);
+  const ssTot = ys.reduce((s, v) => s + (v - my) ** 2, 0);
+  const ssRes = residuals.reduce((s, v) => s + v ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const mse = ssRes / (n - 2);
+  const seb1 = Math.sqrt(mse / sxx);
+  const t = b1 / seb1;
+  const p = tPValue(Math.abs(t), n - 2);
+  const rmse = Math.sqrt(mse);
+  const residualSkew = skewness(residuals);
+  const absResidualFitCorr = Math.abs(pearsonCorrelation(yHat, residuals.map(value => Math.abs(value))) || 0);
+  const standardizedResiduals = residuals.map(value => rmse > 0 ? value / rmse : 0);
+  const highResidualCount = standardizedResiduals.filter(value => Math.abs(value) > 2.5).length;
+  const assumptions = [
+    evaluateAssumption(
+      n >= 12 ? 'pass' : (n >= 8 ? 'warn' : 'fail'),
+      'Adequate sample size',
+      `The model is fit on n=${n} observations. Very small samples make regression coefficients unstable.`
+    ),
+    evaluateAssumption(
+      Math.abs(residualSkew ?? 0) <= 1.5 ? 'pass' : (Math.abs(residualSkew ?? 0) <= 2 ? 'warn' : 'fail'),
+      'Residual symmetry',
+      `Residual skewness is ${fmt(residualSkew, 2)}. Strong asymmetry weakens standard t-tests on the slope.`
+    ),
+    evaluateAssumption(
+      absResidualFitCorr <= 0.15 ? 'pass' : (absResidualFitCorr <= 0.3 ? 'warn' : 'fail'),
+      'Rough homoscedasticity screen',
+      `Correlation between fitted values and absolute residuals is ${fmt(absResidualFitCorr, 3)}. Larger values suggest non-constant variance.`
+    ),
+    evaluateAssumption(
+      highResidualCount === 0 ? 'pass' : (highResidualCount <= Math.max(1, Math.floor(n * 0.1)) ? 'warn' : 'fail'),
+      'Large residuals / influential points',
+      `${highResidualCount} observations exceed |standardized residual| > 2.5. Influential points can drive the slope.`
+    ),
+  ];
+
+  const xLabel = document.getElementById('regX').options[document.getElementById('regX').selectedIndex].text;
+  const yLabel = document.getElementById('regY').options[document.getElementById('regY').selectedIndex].text;
+  regressionState = { b0, b1, r2, rmse, t, p, n, pairs, xs, ys, yHat, residuals, xLabel, yLabel, assumptions };
+  renderRegressionResults(regressionState);
+}
+
+function renderRegressionResults({ b0, b1, r2, rmse, t, p, n, pairs, xs, ys, yHat, residuals, xLabel, yLabel, assumptions }) {
+  document.getElementById('regressionEmpty').classList.add('d-none');
+  document.getElementById('regressionResults').classList.remove('d-none');
+
+  const alpha = 0.05;
+  const sigClass = p < 0.01 ? 'sig' : p < alpha ? 'sig' : p < 0.10 ? 'marginal' : 'not-sig';
+  const sigText = p < 0.01 ? 'Highly Significant (p < 0.01)' : p < alpha ? 'Significant (p < 0.05)' : p < 0.10 ? 'Marginal (p < 0.10)' : 'Not Significant';
+  const tCritical = inverseTPValue(1 - alpha / 2, n - 2);
+  const reject = Math.abs(t) > tCritical;
+
+  document.getElementById('regressionSigBadge').innerHTML = `
+    <span class="result-badge ${sigClass}">${sigText}</span>
+    <span class="result-badge" style="background:#f1f5f9;color:#475569;">OLS Regression</span>`;
+
+  document.getElementById('regressionStatCards').innerHTML = makeStatCards([
+    ['R² (Fit Quality)', fmt(r2 * 100, 1) + '%'], ['RMSE', fmt(rmse, 3)],
+    ['β₁ (Slope)', fmt(b1, 5)], ['β₀ (Intercept)', fmt(b0, 3)],
+    ['t-statistic', fmt(t, 4)], ['p-value', fmtP(p)], ['n', n]
+  ]);
+
+  document.getElementById('regressionEquation').innerHTML =
+    `<strong>Model:</strong> ŷ = ${fmt(b0, 3)} + ${fmt(b1, 5)} × x<br>
+     <small class="text-muted">where x = ${xLabel}, ŷ = ${yLabel}</small>`;
+  renderAssumptions('regressionAssumptions', assumptions, 'Simple linear regression assumes a roughly linear mean structure, residuals without extreme asymmetry, and no strong fan-shape in residual spread.');
+  const regressionTone = summarizeAssumptionStatuses(assumptions);
+  if (regressionTone === 'avoid') {
+    renderRecommendation('regressionRecommendation', 'avoid', 'OLS assumptions are materially strained.', 'Inspect the scatter and residual plots before trusting the slope test. Consider transforming the outcome, using robust regression, or fitting a non-linear model.');
+  } else if (regressionTone === 'caution') {
+    renderRecommendation('regressionRecommendation', 'caution', 'The fit is usable but should be treated carefully.', 'Residual shape or spread is not fully clean. Report the model as exploratory and consider a robust standard-error or transformed re-fit.');
+  } else {
+    renderRecommendation('regressionRecommendation', 'ok', 'OLS assumptions look reasonable.', 'The residual diagnostics do not show a major reason to reject a simple linear model for this pair.');
+  }
+  document.getElementById('regressionDecisionRule').innerHTML = `<strong>Decision Rule:</strong> Reject H : β₁=0 if |t| > t* = ${fmt(tCritical, 3)} (two-tailed, α=${alpha}, df=${n - 2}). Observed |t|=${fmt(Math.abs(t), 3)}  <strong>${reject ? 'Reject H ' : 'Fail to reject H '}</strong>.`;
+  drawCriticalRegionChart('regressionCriticalRegionChart', {
+    xMin: -Math.max(5, tCritical * 1.45, Math.abs(t) * 1.25),
+    xMax: Math.max(5, tCritical * 1.45, Math.abs(t) * 1.25),
+    pdf: x => 1 / Math.sqrt(2 * Math.PI) * Math.exp(-0.5 * x * x),
+    isCritical: x => Math.abs(x) >= tCritical,
+    observed: t,
+    statLabel: 't',
+    title: 'Critical Region Sketch (Two-Tailed Regression t Test)',
+    axisLabel: 't statistic',
+  });
+
+  const rDist = document.getElementById('regressionQqDist').value;
+  const rQq = qqDistributionSeries(residuals, rDist);
+  const rLine = qqIdentityLine([rQq.points]);
+  const rBest = bestQqFitForValues(residuals);
+  document.getElementById('regressionQqMeta').textContent = rQq.warning || `Residuals are compared against ${QQ_DISTRIBUTION_LABELS[rQq.distribution]} theoretical quantiles. ${bestFitText(rBest)}`;
+
+  if (regQqInst) regQqInst.destroy();
+  regQqInst = new Chart(document.getElementById('regressionQqPlot'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: `Residual QQ (${QQ_DISTRIBUTION_LABELS[rQq.distribution]})`,
+          data: rQq.points,
+          backgroundColor: 'rgba(245,158,11,0.75)',
+          borderColor: '#f59e0b',
+          pointRadius: 4,
+        },
+        {
+          label: '45° Reference',
+          type: 'line',
+          data: rLine,
+          borderColor: '#ef4444',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: 'QQ Plot: Regression Residual Distribution Check', font: { weight: '700' } },
+      },
+      scales: {
+        x: { title: { display: true, text: rQq.xAxis } },
+        y: { title: { display: true, text: 'Residuals' } },
+      }
+    }
+  });
+
+  if (regScatterInst) regScatterInst.destroy();
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  regScatterInst = new Chart(document.getElementById('regressionScatter'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Observations', data: pairs.map(p => ({ x: p[document.getElementById('regX').value], y: p[document.getElementById('regY').value] })), backgroundColor: 'rgba(99,102,241,0.5)', borderColor: '#6366f1', pointRadius: 5 },
+        { label: `Fit: ŷ = ${fmt(b0,2)} + ${fmt(b1,4)}x  (R² = ${fmt(r2,3)})`, type: 'line', data: [{ x: xMin, y: b0 + b1 * xMin }, { x: xMax, y: b0 + b1 * xMax }], borderColor: '#ef4444', borderWidth: 2.5, pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'top' }, title: { display: true, text: `${xLabel} → ${yLabel}`, font: { weight: '700' } } },
+      scales: { x: { title: { display: true, text: xLabel } }, y: { title: { display: true, text: yLabel } } }
+    }
+  });
+
+  if (regResidInst) regResidInst.destroy();
+  regResidInst = new Chart(document.getElementById('regressionResiduals'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Residuals', data: yHat.map((y, i) => ({ x: y, y: residuals[i] })), backgroundColor: 'rgba(245,158,11,0.6)', borderColor: '#f59e0b', pointRadius: 4 },
+        { label: 'Zero Line', type: 'line', data: [{ x: Math.min(...yHat), y: 0 }, { x: Math.max(...yHat), y: 0 }], borderColor: '#94a3b8', borderWidth: 1.5, pointRadius: 0, borderDash: [4, 4] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, title: { display: true, text: 'Residuals vs Fitted Values', font: { weight: '700' } } },
+      scales: { x: { title: { display: true, text: 'Fitted ŷ' } }, y: { title: { display: true, text: 'Residual' } } }
+    }
+  });
+}
+
+// ============================================================
+// CHI-SQUARE
+// ============================================================
+let chisqHeatInst = null, chisqBarInst = null;
+
+function runChiSquare() {
+  const varA = document.getElementById('chisqVarA').value;
+  const varB = document.getElementById('chisqVarB').value;
+  const alpha = parseFloat(document.getElementById('chisqAlpha').value);
+
+  if (varA === varB) { alert('Please select two different categorical variables.'); return; }
+
+  const levelsA = [...new Set(allPatients.map(p => p[varA]).filter(Boolean))].sort();
+  const levelsB = [...new Set(allPatients.map(p => p[varB]).filter(Boolean))].sort();
+
+  const observed = levelsA.map(a => levelsB.map(b => allPatients.filter(p => p[varA] === a && p[varB] === b).length));
+  const rowTotals = observed.map(row => row.reduce((s, v) => s + v, 0));
+  const colTotals = levelsB.map((_, ci) => observed.reduce((s, row) => s + row[ci], 0));
+  const N = rowTotals.reduce((s, v) => s + v, 0);
+
+  if (N === 0) { alert('No data found.'); return; }
+
+  const expected = levelsA.map((_, ri) => levelsB.map((_, ci) => rowTotals[ri] * colTotals[ci] / N));
+  let chi2 = 0;
+  observed.forEach((row, ri) => row.forEach((o, ci) => { const e = expected[ri][ci]; if (e > 0) chi2 += (o - e) ** 2 / e; }));
+  const df = (levelsA.length - 1) * (levelsB.length - 1);
+  const p = chiSqPValue(chi2, df);
+  const cramersV = Math.sqrt(chi2 / (N * Math.min(levelsA.length - 1, levelsB.length - 1)));
+  const expectedCells = expected.flat();
+  const belowFive = expectedCells.filter(value => value < 5).length;
+  const belowOne = expectedCells.filter(value => value < 1).length;
+  const assumptions = [
+    evaluateAssumption(
+      belowOne === 0 ? 'pass' : 'fail',
+      'No expected cell below 1',
+      `${belowOne} cells have expected counts below 1. That is too sparse for a standard chi-square approximation.`
+    ),
+    evaluateAssumption(
+      (belowFive / expectedCells.length) <= 0.2 ? 'pass' : ((belowFive / expectedCells.length) <= 0.4 ? 'warn' : 'fail'),
+      'Most expected counts at least 5',
+      `${belowFive} of ${expectedCells.length} expected cells are below 5. Chi-square performs poorly when too many cells are sparse.`
+    ),
+    evaluateAssumption(
+      Math.min(...rowTotals) >= 5 && Math.min(...colTotals) >= 5 ? 'pass' : 'warn',
+      'Reasonable marginal totals',
+      `Minimum row total is ${Math.min(...rowTotals)} and minimum column total is ${Math.min(...colTotals)}. Thin margins increase sparsity problems.`
+    ),
+    evaluateAssumption(
+      'warn',
+      'Independence of observations',
+      'This cannot be verified from counts alone. The same patient should not contribute repeatedly to multiple cells as if observations were independent.'
+    ),
+  ];
+  renderChiSquareResults({ chi2, df, p, cramersV, alpha, levelsA, levelsB, observed, expected, rowTotals, colTotals, N, varA, varB, assumptions });
+}
+
+function renderChiSquareResults({ chi2, df, p, cramersV, alpha, levelsA, levelsB, observed, expected, rowTotals, colTotals, N, varA, varB, assumptions }) {
+  document.getElementById('chisqEmpty').classList.add('d-none');
+  document.getElementById('chisqResults').classList.remove('d-none');
+
+  const sigClass = p < 0.01 ? 'sig' : p < alpha ? 'sig' : p < 0.10 ? 'marginal' : 'not-sig';
+  const sigText = p < 0.01 ? 'Highly Significant (p < 0.01)' : p < alpha ? `Significant (p < ${alpha})` : p < 0.10 ? 'Marginal (p < 0.10)' : 'Not Significant';
+  const assocText = cramersV < 0.1 ? 'Negligible' : cramersV < 0.3 ? 'Weak' : cramersV < 0.5 ? 'Moderate' : 'Strong';
+  const chiCritical = inverseChiSqPValue(1 - alpha, df);
+  const reject = chi2 > chiCritical;
+
+  document.getElementById('chisqSigBadge').innerHTML = `
+    <span class="result-badge ${sigClass}">${sigText}</span>
+    <span class="result-badge" style="background:#f1f5f9;color:#475569;">${assocText} Association</span>`;
+
+  document.getElementById('chisqStatCards').innerHTML = makeStatCards([
+    ['χ²-statistic', fmt(chi2, 4)], ['Degrees of Freedom', df],
+    ['p-value', fmtP(p)], ["Cramér's V", fmt(cramersV, 4)], ['N', N]
+  ]);
+  renderAssumptions('chisqAssumptions', assumptions, 'Chi-square depends on independent observations and enough expected counts in the contingency table for the asymptotic approximation to be credible.');
+  const chisqTone = summarizeAssumptionStatuses(assumptions);
+  if (chisqTone === 'avoid') {
+    renderRecommendation('chisqRecommendation', 'avoid', 'The chi-square approximation is weak here.', 'Sparse expected cells make the p-value unreliable. Merge rare categories or use an exact test such as Fisher’s exact test when the table is small enough.');
+  } else if (chisqTone === 'caution') {
+    renderRecommendation('chisqRecommendation', 'caution', 'Interpret the contingency result cautiously.', 'The table is borderline sparse. Report the pattern visually, but avoid over-claiming the p-value without a sensitivity check.');
+  } else {
+    renderRecommendation('chisqRecommendation', 'ok', 'The expected-count screen looks acceptable.', 'Nothing in the contingency structure strongly argues against a standard chi-square approximation.');
+  }
+  document.getElementById('chisqDecisionRule').innerHTML = `<strong>Decision Rule:</strong> Reject H  of independence if χ² > χ²* = ${fmt(chiCritical, 3)} (right-tailed, α=${alpha}, df=${df}). Observed χ²=${fmt(chi2, 3)}  <strong>${reject ? 'Reject H ' : 'Fail to reject H '}</strong>.`;
+  drawCriticalRegionChart('chisqCriticalRegionChart', {
+    xMin: 0,
+    xMax: Math.max(18, chiCritical * 1.5, chi2 * 1.2),
+    pdf: x => Math.exp(-x / Math.max(df, 1)),
+    isCritical: x => x >= chiCritical,
+    observed: chi2,
+    statLabel: 'χ²',
+    title: 'Critical Region Sketch (Right-Tailed χ² Test)',
+    axisLabel: 'χ² statistic',
+  });
+
+  // Contingency table
+  let tableHtml = `<table class="table table-bordered table-sm contingency-table">
+    <thead><tr><th>${varA} \\ ${varB}</th>${levelsB.map(b => `<th>${b}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  levelsA.forEach((a, ri) => {
+    tableHtml += `<tr><td class="fw-semibold">${a}</td>`;
+    levelsB.forEach((b, ci) => {
+      const o = observed[ri][ci], e = expected[ri][ci];
+      const dev = e > 0 ? (o - e) / Math.sqrt(e) : 0;
+      const intensity = Math.min(1, Math.abs(dev) / 3);
+      const bg = dev > 0 ? `rgba(99,102,241,${intensity * 0.4})` : `rgba(239,68,68,${intensity * 0.4})`;
+      tableHtml += `<td style="background:${bg};" title="Expected: ${fmt(e,1)}">${o} <small class="text-muted">(${fmt(e,1)})</small></td>`;
+    });
+    tableHtml += `<td class="fw-semibold">${rowTotals[ri]}</td></tr>`;
+  });
+  tableHtml += `<tr class="table-active fw-semibold"><td>Total</td>${colTotals.map(c => `<td>${c}</td>`).join('')}<td>${N}</td></tr>`;
+  tableHtml += `</tbody></table><p class="text-muted" style="font-size:0.72rem;">Cells show observed count (expected). Cell color intensity indicates deviation from independence.</p>`;
+  document.getElementById('chisqContingency').innerHTML = tableHtml;
+
+  // Heatmap
+  if (chisqHeatInst) chisqHeatInst.destroy();
+  const heatPoints = [];
+  levelsA.forEach((a, ri) => levelsB.forEach((b, ci) => {
+    const dev = expected[ri][ci] > 0 ? (observed[ri][ci] - expected[ri][ci]) / Math.sqrt(expected[ri][ci]) : 0;
+    heatPoints.push({ x: b, y: a, dev, o: observed[ri][ci], e: fmt(expected[ri][ci], 1) });
+  }));
+
+  chisqHeatInst = new Chart(document.getElementById('chisqHeatmap'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Standardized Residual',
+        data: heatPoints.map(d => ({ x: d.x, y: d.y })),
+        backgroundColor: heatPoints.map(d => {
+          const v = d.dev, a = Math.min(0.9, Math.abs(v) / 3 + 0.2);
+          return v > 0 ? `rgba(99,102,241,${a})` : `rgba(239,68,68,${a})`;
+        }),
+        pointStyle: 'rect', pointRadius: 28, pointBorderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, aspectRatio: 1.2,
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: `Pearson Residuals Heatmap (blue = excess, red = deficit)`, font: { weight: '700' } },
+        tooltip: { callbacks: { label: ctx => { const d = heatPoints[ctx.dataIndex]; return [`Observed: ${d.o}`, `Expected: ${d.e}`, `Std. Residual: ${fmt(d.dev, 3)}`]; } } }
+      },
+      scales: {
+        x: { type: 'category', labels: levelsB, offset: true, grid: { display: false } },
+        y: { type: 'category', labels: [...levelsA].reverse(), offset: true, grid: { display: false } }
+      }
+    }
+  });
+  document.getElementById('chisqHeatmap').style.minHeight = `${Math.max(200, levelsA.length * 55 + 80)}px`;
+
+  // Stacked bar chart
+  if (chisqBarInst) chisqBarInst.destroy();
+  chisqBarInst = new Chart(document.getElementById('chisqBar'), {
+    type: 'bar',
+    data: {
+      labels: levelsA,
+      datasets: levelsB.map((b, ci) => ({
+        label: b,
+        data: levelsA.map((_, ri) => observed[ri][ci]),
+        backgroundColor: PALETTE[ci % PALETTE.length] + 'cc',
+        borderColor: PALETTE[ci % PALETTE.length],
+        borderWidth: 1, borderRadius: 4,
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'top' }, title: { display: true, text: `Observed Counts by ${varA} and ${varB}`, font: { weight: '700' } } },
+      scales: { x: { stacked: true, ticks: { maxRotation: 30 } }, y: { stacked: true, title: { display: true, text: 'Count' } } }
+    }
+  });
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmt(v, d = 2) { return v !== null && !isNaN(v) ? (+v).toFixed(d) : '—'; }
+function fmtP(p) { if (p < 0.0001) return '< 0.0001'; if (p < 0.001) return '< 0.001'; return fmt(p, 4); }
+
+function makeStatCards(entries) {
+  return entries.map(([label, value]) => `
+    <div class="col-6">
+      <div class="stat-row">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value">${value}</div>
+      </div>
+    </div>`).join('');
+}
+</script>
+{% endblock %}

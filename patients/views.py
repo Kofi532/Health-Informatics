@@ -8,11 +8,12 @@ from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta, datetime
 from django.utils.text import slugify
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.conf import settings
 from django.urls import reverse
 import csv
 import hashlib, hmac
+import math
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
@@ -60,6 +61,296 @@ def _deidentify_text(value, replacements):
         text = text.replace(key.title(), target)
         lowered = text.lower()
     return text
+
+
+def _calculate_age(date_of_birth):
+    if not date_of_birth:
+        return None
+    today = timezone.now().date()
+    years = today.year - date_of_birth.year
+    if (today.month, today.day) < (date_of_birth.month, date_of_birth.day):
+        years -= 1
+    return max(0, years)
+
+
+def _age_group(age):
+    if age is None:
+        return 'Unknown'
+    if age < 18:
+        return 'Under 18'
+    if age <= 29:
+        return '18-29'
+    if age <= 44:
+        return '30-44'
+    if age <= 59:
+        return '45-59'
+    return '60+'
+
+
+def _infer_locality(address):
+    text = (address or '').strip().lower()
+    if not text:
+        return 'Unknown'
+
+    urban_keywords = ['urban', 'city', 'metro', 'metropolitan', 'town']
+    rural_keywords = ['rural', 'village', 'hamlet']
+
+    if any(keyword in text for keyword in urban_keywords):
+        return 'Urban'
+    if any(keyword in text for keyword in rural_keywords):
+        return 'Rural'
+    return 'Unknown'
+
+
+def _infer_region(address):
+    text = (address or '').strip().lower()
+    if not text:
+        return 'Unknown'
+
+    region_aliases = {
+        'greater accra': 'Greater Accra',
+        'accra': 'Greater Accra',
+        'ashanti': 'Ashanti',
+        'kumasi': 'Ashanti',
+        'western north': 'Western North',
+        'western': 'Western',
+        'eastern': 'Eastern',
+        'central': 'Central',
+        'volta': 'Volta',
+        'northern': 'Northern',
+        'upper east': 'Upper East',
+        'upper west': 'Upper West',
+        'savannah': 'Savannah',
+        'north east': 'North East',
+        'oti': 'Oti',
+        'ahafo': 'Ahafo',
+        'bono east': 'Bono East',
+        'bono': 'Bono',
+    }
+
+    for alias, label in region_aliases.items():
+        if alias in text:
+            return label
+
+    # Fall back to the trailing comma-separated segment when no known keyword exists.
+    if ',' in address:
+        tail = address.split(',')[-1].strip()
+        if tail:
+            return tail[:64]
+
+    if text == 'simulation dataset':
+        return 'Simulated Region'
+
+    return 'Other'
+
+
+def _safe_round(value, digits=1):
+    if value is None:
+        return None
+    return round(value, digits)
+
+
+def _apply_analytics_filters(rows, query_params):
+    age_group = (query_params.get('age_group') or '').strip()
+    gender = (query_params.get('gender') or '').strip()
+    region = (query_params.get('region') or '').strip()
+    locality = (query_params.get('locality') or '').strip()
+    diabetes_type = (query_params.get('diabetes_type') or '').strip()
+    min_stability_raw = (query_params.get('min_stability') or '').strip()
+
+    try:
+        min_stability = float(min_stability_raw) if min_stability_raw else 0.0
+    except ValueError:
+        min_stability = 0.0
+
+    filtered = []
+    for row in rows:
+        if age_group and row.get('age_group') != age_group:
+            continue
+        if gender and row.get('gender') != gender:
+            continue
+        if region and row.get('region') != region:
+            continue
+        if locality and row.get('locality') != locality:
+            continue
+        if diabetes_type and row.get('diabetes_type') != diabetes_type:
+            continue
+
+        stability = row.get('stability_score')
+        if stability is not None and stability < min_stability:
+            continue
+
+        filtered.append(row)
+
+    return filtered
+
+
+def _get_research_visible_patients(user):
+    physician_user = is_physician_user(user)
+    dietician_user = is_dietician_user(user)
+
+    if physician_user:
+        return list(get_patients_approved_for_physician(user))
+    if dietician_user:
+        return list(get_patients_approved_for_dietician(user))
+    return list(Patient.objects.all().order_by('last_name', 'first_name'))
+
+
+def _can_download_research_summary(user):
+    role = get_user_role(user)
+    return role in {
+        UserProfile.ROLE_RESEARCHER,
+        UserProfile.ROLE_PHYSICIAN,
+        UserProfile.ROLE_DIETICIAN,
+    }
+
+
+def _build_research_analytics_payload(patients):
+    region_coordinates = {
+        'Greater Accra': [5.6037, -0.1870],
+        'Ashanti': [6.6885, -1.6244],
+        'Western': [4.8966, -1.7831],
+        'Western North': [6.1237, -2.4896],
+        'Eastern': [6.1605, -0.5603],
+        'Central': [5.1053, -1.2466],
+        'Volta': [6.5781, 0.4502],
+        'Northern': [9.4075, -0.8530],
+        'Upper East': [10.7737, -0.0595],
+        'Upper West': [10.0667, -2.5000],
+        'Savannah': [9.7085, -1.1140],
+        'North East': [10.5270, -0.3660],
+        'Oti': [8.2500, 0.6500],
+        'Bono': [7.6500, -2.5000],
+        'Bono East': [7.9500, -1.9000],
+        'Ahafo': [7.0000, -2.6500],
+        'Simulated Region': [7.9465, -1.0232],
+        'Other': [7.9465, -1.0232],
+        'Unknown': [7.9465, -1.0232],
+    }
+
+    latest_assessment_by_patient = {}
+    for assessment in DiabetesAssessment.objects.filter(patient__in=patients).order_by('patient_id', '-assessed_at'):
+        if assessment.patient_id not in latest_assessment_by_patient:
+            latest_assessment_by_patient[assessment.patient_id] = assessment
+
+    patient_rows = []
+    for patient in patients:
+        age = _calculate_age(patient.date_of_birth)
+        age_group = _age_group(age)
+        region = patient.region or _infer_region(patient.address)
+        locality = patient.locality_type or _infer_locality(patient.address)
+        gender_display = patient.get_gender_display() or 'Unknown'
+
+        latest_assessment = latest_assessment_by_patient.get(patient.id)
+        diabetes_type = (
+            latest_assessment.get_diabetes_type_display()
+            if latest_assessment is not None and latest_assessment.diabetes_type
+            else 'Unspecified'
+        )
+
+        glucose_logs_qs = GlucoseLog.objects.filter(profile__user__userprofile__patient=patient)
+        levels = list(glucose_logs_qs.values_list('glucose_level', flat=True))
+        reading_count = len(levels)
+
+        avg_glucose = None
+        safe_percentage = None
+        stability_score = None
+        if levels:
+            avg_glucose = sum(levels) / reading_count
+            safe_count = sum(1 for value in levels if value < 140)
+            safe_percentage = (safe_count / reading_count) * 100
+            if reading_count > 1 and avg_glucose > 0:
+                variance = sum((value - avg_glucose) ** 2 for value in levels) / reading_count
+                std_dev = math.sqrt(variance)
+                coefficient_variation = std_dev / avg_glucose
+                stability_score = max(0.0, min(100.0, 100 - (coefficient_variation * 100)))
+            else:
+                stability_score = 100.0
+
+        risk_band = 'Unknown'
+        if avg_glucose is not None and safe_percentage is not None:
+            if avg_glucose >= 180 or safe_percentage < 40:
+                risk_band = 'High'
+            elif avg_glucose >= 140 or safe_percentage < 70:
+                risk_band = 'Moderate'
+            else:
+                risk_band = 'Low'
+
+        patient_rows.append({
+            'patient_id': patient.id,
+            'age': age,
+            'age_group': age_group,
+            'gender': gender_display,
+            'region': region,
+            'locality': locality,
+            'diabetes_type': diabetes_type,
+            'reading_count': reading_count,
+            'avg_glucose': _safe_round(avg_glucose),
+            'safe_percentage': _safe_round(safe_percentage),
+            'stability_score': _safe_round(stability_score),
+            'risk_band': risk_band,
+        })
+
+    region_buckets = {}
+    for row in patient_rows:
+        region_key = row['region'] or 'Unknown'
+        if region_key not in region_buckets:
+            region_buckets[region_key] = {
+                'region': region_key,
+                'patient_count': 0,
+                'high_risk_count': 0,
+                'avg_glucose_sum': 0.0,
+                'avg_glucose_count': 0,
+                'stability_sum': 0.0,
+                'stability_count': 0,
+            }
+        bucket = region_buckets[region_key]
+        bucket['patient_count'] += 1
+        if row['risk_band'] == 'High':
+            bucket['high_risk_count'] += 1
+        if row['avg_glucose'] is not None:
+            bucket['avg_glucose_sum'] += row['avg_glucose']
+            bucket['avg_glucose_count'] += 1
+        if row['stability_score'] is not None:
+            bucket['stability_sum'] += row['stability_score']
+            bucket['stability_count'] += 1
+
+    region_markers = []
+    for region_name, bucket in region_buckets.items():
+        lat, lng = region_coordinates.get(region_name, region_coordinates['Other'])
+        avg_glucose = None
+        avg_stability = None
+        if bucket['avg_glucose_count']:
+            avg_glucose = bucket['avg_glucose_sum'] / bucket['avg_glucose_count']
+        if bucket['stability_count']:
+            avg_stability = bucket['stability_sum'] / bucket['stability_count']
+        region_markers.append({
+            'region': region_name,
+            'lat': lat,
+            'lng': lng,
+            'patient_count': bucket['patient_count'],
+            'high_risk_count': bucket['high_risk_count'],
+            'avg_glucose': _safe_round(avg_glucose),
+            'avg_stability': _safe_round(avg_stability),
+        })
+
+    def _unique_sorted(values):
+        cleaned = [value for value in values if value]
+        return sorted(set(cleaned))
+
+    return {
+        'generated_at': timezone.now().isoformat(),
+        'patients': patient_rows,
+        'filter_options': {
+            'age_groups': _unique_sorted([row['age_group'] for row in patient_rows]),
+            'genders': _unique_sorted([row['gender'] for row in patient_rows]),
+            'regions': _unique_sorted([row['region'] for row in patient_rows]),
+            'diabetes_types': _unique_sorted([row['diabetes_type'] for row in patient_rows]),
+            'localities': _unique_sorted([row['locality'] for row in patient_rows]),
+        },
+        'region_coordinates': region_coordinates,
+        'region_markers': sorted(region_markers, key=lambda marker: marker['region']),
+    }
 
 
 DIETICIAN_CATEGORY_VALUES = {
@@ -310,12 +601,7 @@ def researcher_patient_list(request):
     dietician_user = is_dietician_user(request.user)
     specialist_limited = physician_user or dietician_user
 
-    if physician_user:
-        patients = get_patients_approved_for_physician(request.user)
-    elif dietician_user:
-        patients = get_patients_approved_for_dietician(request.user)
-    else:
-        patients = Patient.objects.all().order_by('last_name', 'first_name')
+    patients = _get_research_visible_patients(request.user)
 
     patient_content = []
     for patient in patients:
@@ -363,7 +649,190 @@ def researcher_patient_list(request):
     return render(request, 'patients/researcher_patient_list.html', {
         'patient_content': patient_content,
         'specialist_limited': specialist_limited,
+        'research_analytics_json': json.dumps(_build_research_analytics_payload(patients)),
     })
+
+
+@login_required
+def researcher_analytics_data(request):
+    if get_user_role(request.user) != UserProfile.ROLE_RESEARCHER:
+        return JsonResponse({'detail': 'You do not have permission to view research analytics.'}, status=403)
+
+    patients = _get_research_visible_patients(request.user)
+
+    payload = _build_research_analytics_payload(patients)
+    payload['patients'] = _apply_analytics_filters(payload.get('patients', []), request.GET)
+    return JsonResponse(payload)
+
+
+@login_required
+def export_filtered_research_csv(request):
+    """Export filtered cohort rows from the researcher analytics dashboard."""
+    if get_user_role(request.user) != UserProfile.ROLE_RESEARCHER:
+        return HttpResponseForbidden('You do not have permission to export this dataset.')
+
+    patients = _get_research_visible_patients(request.user)
+
+    payload = _build_research_analytics_payload(patients)
+    filtered_rows = _apply_analytics_filters(payload.get('patients', []), request.GET)
+
+    response = HttpResponse(content_type='text/csv')
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="research_filtered_cohort_{timestamp}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'patient_key',
+        'age_group',
+        'gender',
+        'region',
+        'locality',
+        'diabetes_type',
+        'reading_count',
+        'avg_glucose_mg_dl',
+        'safe_percentage',
+        'stability_score',
+        'risk_band',
+    ])
+
+    for row in filtered_rows:
+        writer.writerow([
+            _research_patient_key(row.get('patient_id')),
+            row.get('age_group'),
+            row.get('gender'),
+            row.get('region'),
+            row.get('locality'),
+            row.get('diabetes_type'),
+            row.get('reading_count'),
+            row.get('avg_glucose'),
+            row.get('safe_percentage'),
+            row.get('stability_score'),
+            row.get('risk_band'),
+        ])
+
+    return response
+
+
+@login_required
+def export_research_pdf_summary(request):
+    """Export a one-page PDF summary of filtered research trends."""
+    if not _can_download_research_summary(request.user):
+        return HttpResponseForbidden('You do not have permission to export this summary.')
+
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas as pdf_canvas
+    except Exception:
+        return HttpResponse('PDF export requires reportlab. Install dependencies and try again.', status=500)
+
+    patients = _get_research_visible_patients(request.user)
+    payload = _build_research_analytics_payload(patients)
+    rows = _apply_analytics_filters(payload.get('patients', []), request.GET)
+
+    def _mean(values):
+        clean = [value for value in values if isinstance(value, (int, float))]
+        if not clean:
+            return None
+        return sum(clean) / len(clean)
+
+    total_patients = len(rows)
+    avg_glucose = _mean([row.get('avg_glucose') for row in rows])
+    avg_stability = _mean([row.get('stability_score') for row in rows])
+    high_risk_count = sum(1 for row in rows if row.get('risk_band') == 'High')
+    high_risk_share = (high_risk_count / total_patients * 100) if total_patients else 0
+
+    safe_values = [row.get('safe_percentage') for row in rows if isinstance(row.get('safe_percentage'), (int, float))]
+    avg_safe_share = _mean(safe_values)
+
+    region_counts = {}
+    for row in rows:
+        region = row.get('region') or 'Unknown'
+        region_counts[region] = region_counts.get(region, 0) + 1
+    top_regions = sorted(region_counts.items(), key=lambda item: item[1], reverse=True)[:5]
+
+    active_filters = []
+    for key, label in [
+        ('age_group', 'Age Group'),
+        ('gender', 'Gender'),
+        ('region', 'Region'),
+        ('locality', 'Locality'),
+        ('diabetes_type', 'Diabetes Type'),
+        ('min_stability', 'Min Stability'),
+    ]:
+        value = (request.GET.get(key) or '').strip()
+        if value:
+            active_filters.append(f'{label}: {value}')
+
+    response = HttpResponse(content_type='application/pdf')
+    ts = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="research_trend_summary_{ts}.pdf"'
+
+    page_width, page_height = A4
+    c = pdf_canvas.Canvas(response, pagesize=A4)
+    margin = 40
+    y = page_height - margin
+
+    c.setFont('Helvetica-Bold', 16)
+    c.drawString(margin, y, 'GlucoBridge Research Trend Summary')
+    y -= 20
+    c.setFont('Helvetica', 10)
+    c.drawString(margin, y, f'Generated: {timezone.now().strftime("%Y-%m-%d %H:%M")}')
+    y -= 18
+
+    c.setStrokeColorRGB(0.82, 0.86, 0.9)
+    c.line(margin, y, page_width - margin, y)
+    y -= 18
+
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(margin, y, 'Filtered Cohort Snapshot')
+    y -= 18
+
+    c.setFont('Helvetica', 10)
+    metrics = [
+        ('Patients in View', str(total_patients)),
+        ('Average Glucose', 'N/A' if avg_glucose is None else f'{avg_glucose:.1f} mg/dL'),
+        ('Average Stability', 'N/A' if avg_stability is None else f'{avg_stability:.1f}%'),
+        ('High Risk Share', f'{high_risk_share:.1f}%'),
+        ('Average Safe Readings Share', 'N/A' if avg_safe_share is None else f'{avg_safe_share:.1f}%'),
+    ]
+    for name, value in metrics:
+        c.drawString(margin, y, f'{name}:')
+        c.drawString(margin + 190, y, value)
+        y -= 15
+
+    y -= 8
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(margin, y, 'Top Regions by Patient Count')
+    y -= 18
+    c.setFont('Helvetica', 10)
+    if top_regions:
+        for index, (region, count) in enumerate(top_regions, start=1):
+            c.drawString(margin, y, f'{index}. {region}')
+            c.drawRightString(page_width - margin, y, str(count))
+            y -= 15
+    else:
+        c.drawString(margin, y, 'No regional data available for this filter selection.')
+        y -= 15
+
+    y -= 8
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(margin, y, 'Applied Filters')
+    y -= 18
+    c.setFont('Helvetica', 10)
+    if active_filters:
+        for entry in active_filters:
+            c.drawString(margin, y, f'- {entry}')
+            y -= 15
+            if y < 90:
+                break
+    else:
+        c.drawString(margin, y, 'None (all records in scope).')
+
+    c.setFont('Helvetica-Oblique', 8)
+    c.drawString(margin, 30, 'De-identified summary for analytical use only. Individual identifiers are excluded.')
+    c.showPage()
+    c.save()
+    return response
 
 
 @login_required
@@ -1338,6 +1807,12 @@ def export_research_excel(request):
             return HttpResponseForbidden('Requested patient was not found for export.')
 
     patients = list(patient_qs)
+    if any(request.GET.get(key) for key in ['age_group', 'gender', 'region', 'locality', 'diabetes_type', 'min_stability']):
+        payload = _build_research_analytics_payload(patients)
+        filtered_rows = _apply_analytics_filters(payload.get('patients', []), request.GET)
+        allowed_ids = {row.get('patient_id') for row in filtered_rows}
+        patients = [patient for patient in patients if patient.pk in allowed_ids]
+
     patient_ids = [patient.pk for patient in patients]
 
     header_fill = PatternFill(fill_type='solid', fgColor='1D4ED8')
@@ -1446,6 +1921,7 @@ def export_research_excel(request):
     patients_ws = wb.create_sheet('patients')
     patients_headers = [
         'patient_key', 'birth_year', 'age_years_estimate', 'gender_code', 'gender_label',
+        'region', 'locality_type',
         'created_at', 'updated_at', 'diagnosis_status_code', 'diagnosis_status_label',
         'diagnosis_confirmation_code', 'diagnosis_confirmation_label', 'diagnosis_reason_sanitized',
         'diagnosis_fpg', 'diagnosis_hba1c', 'diagnosis_rpg', 'diagnosis_has_classic_symptoms',
@@ -1469,6 +1945,8 @@ def export_research_excel(request):
             age_estimate,
             _clean(patient.gender),
             _clean(patient.get_gender_display()),
+            _clean(patient.region or _infer_region(patient.address)),
+            _clean(patient.locality_type or _infer_locality(patient.address)),
             _iso(patient.created_at),
             _iso(patient.updated_at),
             _clean(diagnosis.status if diagnosis else None),
@@ -1844,4 +2322,20 @@ def privacy_notice(request):
 def terms_of_use(request):
     """Render a simple terms of use page."""
     return render(request, 'terms_of_use.html')
+
+
+@login_required
+def parametric_tests(request):
+    """Interactive parametric statistical tests page for researchers."""
+    role = get_user_role(request.user)
+    allowed_roles = {UserProfile.ROLE_RESEARCHER, UserProfile.ROLE_PHYSICIAN, UserProfile.ROLE_DIETICIAN}
+    if role not in allowed_roles:
+        messages.error(request, 'Access restricted to research personnel.')
+        return redirect_to_role_landing(request.user)
+
+    patients = list(Patient.objects.all().order_by('last_name', 'first_name'))
+    analytics = _build_research_analytics_payload(patients)
+    return render(request, 'patients/parametric_tests.html', {
+        'research_analytics_json': json.dumps(analytics),
+    })
 

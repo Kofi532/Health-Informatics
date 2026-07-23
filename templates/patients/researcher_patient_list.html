@@ -26,6 +26,41 @@
         font-size: 0.9rem;
         color: #334155;
     }
+    .analytics-shell {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #f8fbff 0%, #ffffff 80%);
+    }
+    .analytics-kpi {
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding: 0.9rem 1rem;
+    }
+    .analytics-kpi .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .analytics-kpi .value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.1;
+    }
+    .map-wrap {
+      height: 340px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+    .chart-wrap {
+      position: relative;
+      min-height: 310px;
+    }
 </style>
 {% endblock %}
 
@@ -46,9 +81,146 @@
         <a class="btn btn-success px-4 py-2 fw-medium shadow-sm d-inline-flex align-items-center gap-2 rounded-3" href="{% url 'patients:export_research_excel' %}">
           <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export to Excel Workbook
         </a>
+            <div class="mt-2 mt-md-0 ms-md-2">
+              <a class="btn btn-primary px-4 py-2 fw-medium shadow-sm d-inline-flex align-items-center gap-2 rounded-3" href="{% url 'patients:parametric_tests' %}">
+                <i class="bi bi-bar-chart-line-fill"></i> Statistical Tests Lab
+              </a>
+            </div>
       </div>
     {% endif %}
   </div>
+
+  {% if not specialist_limited %}
+    <div class="analytics-shell p-4 mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h2 class="h5 fw-bold text-dark mb-1">Demographic Insights Explorer</h2>
+          <p class="text-muted small mb-0">Filter by age group, gender, region, and diabetes type. Compare cohorts side-by-side and inspect regional risk patterns.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label small text-muted fw-semibold">Age Group</label>
+          <select id="filterAgeGroup" class="form-select form-select-sm">
+            <option value="">All age groups</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted fw-semibold">Gender</label>
+          <select id="filterGender" class="form-select form-select-sm">
+            <option value="">All genders</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted fw-semibold">Region</label>
+          <select id="filterRegion" class="form-select form-select-sm">
+            <option value="">All regions</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted fw-semibold">Type of Diabetes</label>
+          <select id="filterDiabetesType" class="form-select form-select-sm">
+            <option value="">All types</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted fw-semibold">Locality</label>
+          <select id="filterLocality" class="form-select form-select-sm">
+            <option value="">All localities</option>
+          </select>
+        </div>
+        <div class="col-md-9 d-flex justify-content-md-end align-items-end">
+          <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+            <a id="filteredExportBtn" class="btn btn-outline-success btn-sm px-3" href="{% url 'patients:export_filtered_research_csv' %}">
+              Export Filtered Cohort CSV
+            </a>
+            <a id="filteredExcelBtn" class="btn btn-outline-primary btn-sm px-3" href="{% url 'patients:export_research_excel' %}">
+              Export Filtered Cohort Excel
+            </a>
+            <a id="pdfSummaryBtn" class="btn btn-outline-dark btn-sm px-3" href="{% url 'patients:export_research_pdf_summary' %}">
+              Download 1-Page PDF Summary
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 align-items-center mb-3">
+        <div class="col-md-6">
+          <label for="stabilityThreshold" class="form-label small text-muted fw-semibold">Minimum Stability Score: <span id="stabilityThresholdLabel">0</span>%</label>
+          <input id="stabilityThreshold" type="range" class="form-range" min="0" max="100" step="5" value="0">
+        </div>
+        <div class="col-md-6">
+          <div class="row g-2">
+            <div class="col-4">
+              <label class="form-label small text-muted fw-semibold">Compare by</label>
+              <select id="compareDimension" class="form-select form-select-sm">
+                <option value="locality">Urban/Rural</option>
+                <option value="gender">Gender</option>
+                <option value="age_group">Age Group</option>
+                <option value="region">Region</option>
+                <option value="diabetes_type">Type of Diabetes</option>
+              </select>
+            </div>
+            <div class="col-4">
+              <label class="form-label small text-muted fw-semibold">Cohort A</label>
+              <select id="compareGroupA" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-4">
+              <label class="form-label small text-muted fw-semibold">Cohort B</label>
+              <select id="compareGroupB" class="form-select form-select-sm"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="analytics-kpi"><div class="label">Patients In View</div><div id="kpiPatients" class="value">0</div></div></div>
+        <div class="col-md-3"><div class="analytics-kpi"><div class="label">Avg Glucose</div><div id="kpiGlucose" class="value">0</div></div></div>
+        <div class="col-md-3"><div class="analytics-kpi"><div class="label">Avg Stability</div><div id="kpiStability" class="value">0%</div></div></div>
+        <div class="col-md-3"><div class="analytics-kpi"><div class="label">High Risk Share</div><div id="kpiRisk" class="value">0%</div></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                <h3 class="h6 fw-bold mb-0 text-dark">Filtered Trend Snapshot</h3>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Trend chart export">
+                  <button type="button" class="btn btn-outline-secondary chart-export-btn" data-chart-id="trendChart" data-format="png">PNG</button>
+                  <button type="button" class="btn btn-outline-secondary chart-export-btn" data-chart-id="trendChart" data-format="svg">SVG</button>
+                </div>
+              </div>
+              <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                <h3 class="h6 fw-bold mb-0 text-dark">Cohort Comparison</h3>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Comparison chart export">
+                  <button type="button" class="btn btn-outline-secondary chart-export-btn" data-chart-id="comparisonChart" data-format="png">PNG</button>
+                  <button type="button" class="btn btn-outline-secondary chart-export-btn" data-chart-id="comparisonChart" data-format="svg">SVG</button>
+                </div>
+              </div>
+              <div class="chart-wrap"><canvas id="comparisonChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 fw-bold mb-3 text-dark">Regional Patient Distribution and Risk Zones</h3>
+              <div id="researchMap" class="map-wrap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 
   <!-- Primary Analytics Ledger Card -->
   <div class="card research-card shadow-sm">
@@ -185,4 +357,533 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% if not specialist_limited %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+      (function () {
+        const analytics = {{ research_analytics_json|safe }} || { patients: [], filter_options: {}, region_coordinates: {} };
+        const allPatients = Array.isArray(analytics.patients) ? analytics.patients : [];
+
+        const filterAgeGroup = document.getElementById('filterAgeGroup');
+        const filterGender = document.getElementById('filterGender');
+        const filterRegion = document.getElementById('filterRegion');
+        const filterDiabetesType = document.getElementById('filterDiabetesType');
+        const filterLocality = document.getElementById('filterLocality');
+        const stabilityThreshold = document.getElementById('stabilityThreshold');
+        const stabilityThresholdLabel = document.getElementById('stabilityThresholdLabel');
+
+        const compareDimension = document.getElementById('compareDimension');
+        const compareGroupA = document.getElementById('compareGroupA');
+        const compareGroupB = document.getElementById('compareGroupB');
+
+        const kpiPatients = document.getElementById('kpiPatients');
+        const kpiGlucose = document.getElementById('kpiGlucose');
+        const kpiStability = document.getElementById('kpiStability');
+        const kpiRisk = document.getElementById('kpiRisk');
+        const filteredExportBtn = document.getElementById('filteredExportBtn');
+        const filteredExcelBtn = document.getElementById('filteredExcelBtn');
+        const pdfSummaryBtn = document.getElementById('pdfSummaryBtn');
+        const filteredExportBaseUrl = '{% url "patients:export_filtered_research_csv" %}';
+        const filteredExcelBaseUrl = '{% url "patients:export_research_excel" %}';
+        const pdfSummaryBaseUrl = '{% url "patients:export_research_pdf_summary" %}';
+
+        let trendChart = null;
+        let comparisonChart = null;
+        let map = null;
+        let mapLayer = null;
+        let bootState = null;
+
+        function fillSelect(selectEl, values) {
+          values.forEach((value) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            selectEl.appendChild(option);
+          });
+        }
+
+        function toNumber(value) {
+          return typeof value === 'number' && Number.isFinite(value) ? value : null;
+        }
+
+        function mean(values) {
+          const cleaned = values.filter((v) => typeof v === 'number' && Number.isFinite(v));
+          if (!cleaned.length) {
+            return null;
+          }
+          return cleaned.reduce((sum, v) => sum + v, 0) / cleaned.length;
+        }
+
+        function percent(part, whole) {
+          if (!whole) {
+            return 0;
+          }
+          return (part / whole) * 100;
+        }
+
+        function formatOne(value, suffix) {
+          if (value === null || value === undefined || Number.isNaN(value)) {
+            return 'N/A';
+          }
+          return `${value.toFixed(1)}${suffix || ''}`;
+        }
+
+        function getFilteredPatients() {
+          const ageGroup = filterAgeGroup.value;
+          const gender = filterGender.value;
+          const region = filterRegion.value;
+          const diabetesType = filterDiabetesType.value;
+          const locality = filterLocality.value;
+          const minStability = Number(stabilityThreshold.value || 0);
+
+          return allPatients.filter((row) => {
+            if (ageGroup && row.age_group !== ageGroup) {
+              return false;
+            }
+            if (gender && row.gender !== gender) {
+              return false;
+            }
+            if (region && row.region !== region) {
+              return false;
+            }
+            if (diabetesType && row.diabetes_type !== diabetesType) {
+              return false;
+            }
+            if (locality && row.locality !== locality) {
+              return false;
+            }
+            const stability = toNumber(row.stability_score);
+            if (stability !== null && stability < minStability) {
+              return false;
+            }
+            return true;
+          });
+        }
+
+        function updateKpis(filteredPatients) {
+          const avgGlucose = mean(filteredPatients.map((row) => toNumber(row.avg_glucose)));
+          const avgStability = mean(filteredPatients.map((row) => toNumber(row.stability_score)));
+          const highRiskCount = filteredPatients.filter((row) => row.risk_band === 'High').length;
+
+          kpiPatients.textContent = String(filteredPatients.length);
+          kpiGlucose.textContent = formatOne(avgGlucose, ' mg/dL');
+          kpiStability.textContent = formatOne(avgStability, '%');
+          kpiRisk.textContent = `${percent(highRiskCount, filteredPatients.length).toFixed(1)}%`;
+        }
+
+        function groupByDimension(rows, dimension) {
+          const buckets = new Map();
+          rows.forEach((row) => {
+            const key = row[dimension] || 'Unknown';
+            if (!buckets.has(key)) {
+              buckets.set(key, []);
+            }
+            buckets.get(key).push(row);
+          });
+          return buckets;
+        }
+
+        function updateTrendChart(filteredPatients) {
+          const grouped = groupByDimension(filteredPatients, 'age_group');
+          const labels = Array.from(grouped.keys()).sort();
+          const avgGlucoseData = labels.map((label) => mean(grouped.get(label).map((row) => toNumber(row.avg_glucose))));
+          const stabilityData = labels.map((label) => mean(grouped.get(label).map((row) => toNumber(row.stability_score))));
+
+          if (trendChart) {
+            trendChart.destroy();
+          }
+
+          const ctx = document.getElementById('trendChart').getContext('2d');
+          trendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: 'Average Glucose (mg/dL)',
+                  data: avgGlucoseData,
+                  backgroundColor: 'rgba(37, 99, 235, 0.75)',
+                  borderRadius: 8,
+                  yAxisID: 'y',
+                },
+                {
+                  label: 'Stability Score (%)',
+                  data: stabilityData,
+                  type: 'line',
+                  borderColor: '#ea580c',
+                  backgroundColor: 'rgba(234, 88, 12, 0.15)',
+                  borderWidth: 2.5,
+                  pointRadius: 3,
+                  tension: 0.25,
+                  yAxisID: 'y1',
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: 'mg/dL' },
+                  grid: { color: '#e2e8f0' },
+                },
+                y1: {
+                  beginAtZero: true,
+                  max: 100,
+                  position: 'right',
+                  title: { display: true, text: 'Stability %' },
+                  grid: { drawOnChartArea: false },
+                },
+              },
+            },
+          });
+        }
+
+        function getDimensionValues(rows, dimension) {
+          const values = rows
+            .map((row) => row[dimension] || 'Unknown')
+            .filter((value) => value !== '');
+          return Array.from(new Set(values)).sort();
+        }
+
+        function refreshComparisonSelectors(filteredPatients, preferredA, preferredB) {
+          const dimension = compareDimension.value;
+          const values = getDimensionValues(filteredPatients, dimension);
+
+          compareGroupA.innerHTML = '';
+          compareGroupB.innerHTML = '';
+
+          values.forEach((value) => {
+            const optionA = document.createElement('option');
+            optionA.value = value;
+            optionA.textContent = value;
+            compareGroupA.appendChild(optionA);
+
+            const optionB = document.createElement('option');
+            optionB.value = value;
+            optionB.textContent = value;
+            compareGroupB.appendChild(optionB);
+          });
+
+          if (preferredA && values.includes(preferredA)) {
+            compareGroupA.value = preferredA;
+          }
+
+          if (preferredB && values.includes(preferredB) && preferredB !== compareGroupA.value) {
+            compareGroupB.value = preferredB;
+          } else if (values.length > 1) {
+            compareGroupB.value = values[1];
+          }
+
+          if (compareGroupA.value === compareGroupB.value && values.length > 1) {
+            compareGroupB.value = values.find((value) => value !== compareGroupA.value) || values[0];
+          }
+        }
+
+        function getStateFromUrl() {
+          const params = new URLSearchParams(window.location.search);
+          return {
+            age_group: params.get('age_group') || '',
+            gender: params.get('gender') || '',
+            region: params.get('region') || '',
+            locality: params.get('locality') || '',
+            diabetes_type: params.get('diabetes_type') || '',
+            min_stability: params.get('min_stability') || '0',
+            compare_by: params.get('compare_by') || 'locality',
+            cohort_a: params.get('cohort_a') || '',
+            cohort_b: params.get('cohort_b') || '',
+          };
+        }
+
+        function applyStateToControls(state) {
+          if (state.compare_by) {
+            compareDimension.value = state.compare_by;
+          }
+          if (state.min_stability) {
+            stabilityThreshold.value = state.min_stability;
+          }
+          if (state.age_group) {
+            filterAgeGroup.value = state.age_group;
+          }
+          if (state.gender) {
+            filterGender.value = state.gender;
+          }
+          if (state.region) {
+            filterRegion.value = state.region;
+          }
+          if (state.diabetes_type) {
+            filterDiabetesType.value = state.diabetes_type;
+          }
+          if (state.locality) {
+            filterLocality.value = state.locality;
+          }
+        }
+
+        function buildStateParams() {
+          const params = new URLSearchParams();
+          if (filterAgeGroup.value) params.set('age_group', filterAgeGroup.value);
+          if (filterGender.value) params.set('gender', filterGender.value);
+          if (filterRegion.value) params.set('region', filterRegion.value);
+          if (filterLocality.value) params.set('locality', filterLocality.value);
+          if (filterDiabetesType.value) params.set('diabetes_type', filterDiabetesType.value);
+          if (stabilityThreshold.value && stabilityThreshold.value !== '0') params.set('min_stability', stabilityThreshold.value);
+          if (compareDimension.value) params.set('compare_by', compareDimension.value);
+          if (compareGroupA.value) params.set('cohort_a', compareGroupA.value);
+          if (compareGroupB.value) params.set('cohort_b', compareGroupB.value);
+          return params;
+        }
+
+        function syncUrlAndExportLink() {
+          const params = buildStateParams();
+          const query = params.toString();
+          const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+          window.history.replaceState(null, '', nextUrl);
+          filteredExportBtn.href = query ? `${filteredExportBaseUrl}?${query}` : filteredExportBaseUrl;
+          filteredExcelBtn.href = query ? `${filteredExcelBaseUrl}?${query}` : filteredExcelBaseUrl;
+          pdfSummaryBtn.href = query ? `${pdfSummaryBaseUrl}?${query}` : pdfSummaryBaseUrl;
+        }
+
+        function triggerDownload(url, filename) {
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+
+        function downloadChartAsPng(chartInstance, baseName) {
+          if (!chartInstance) {
+            return;
+          }
+          const pngUrl = chartInstance.toBase64Image('image/png', 1);
+          triggerDownload(pngUrl, `${baseName}.png`);
+        }
+
+        function downloadChartAsSvg(chartInstance, baseName) {
+          if (!chartInstance) {
+            return;
+          }
+          const canvas = chartInstance.canvas;
+          const pngUrl = canvas.toDataURL('image/png');
+          const svgMarkup =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">` +
+            `<rect width="100%" height="100%" fill="#ffffff" />` +
+            `<image href="${pngUrl}" width="${canvas.width}" height="${canvas.height}" />` +
+            `</svg>`;
+          const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+          const blobUrl = URL.createObjectURL(blob);
+          triggerDownload(blobUrl, `${baseName}.svg`);
+          URL.revokeObjectURL(blobUrl);
+        }
+
+        function getChartByCanvasId(canvasId) {
+          if (canvasId === 'trendChart') {
+            return trendChart;
+          }
+          if (canvasId === 'comparisonChart') {
+            return comparisonChart;
+          }
+          return null;
+        }
+
+        function bindChartExportButtons() {
+          const buttons = document.querySelectorAll('.chart-export-btn');
+          buttons.forEach((button) => {
+            button.addEventListener('click', () => {
+              const canvasId = button.getAttribute('data-chart-id');
+              const format = button.getAttribute('data-format');
+              const chartInstance = getChartByCanvasId(canvasId);
+              if (!chartInstance) {
+                return;
+              }
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+              const baseName = `${canvasId}_${timestamp}`;
+              if (format === 'png') {
+                downloadChartAsPng(chartInstance, baseName);
+              } else if (format === 'svg') {
+                downloadChartAsSvg(chartInstance, baseName);
+              }
+            });
+          });
+        }
+
+        function summarizeGroup(rows) {
+          const avgGlucose = mean(rows.map((row) => toNumber(row.avg_glucose)));
+          const avgStability = mean(rows.map((row) => toNumber(row.stability_score)));
+          const highRiskCount = rows.filter((row) => row.risk_band === 'High').length;
+          return {
+            avgGlucose,
+            avgStability,
+            highRiskRate: percent(highRiskCount, rows.length),
+            count: rows.length,
+          };
+        }
+
+        function updateComparisonChart(filteredPatients) {
+          const dimension = compareDimension.value;
+          const valueA = compareGroupA.value;
+          const valueB = compareGroupB.value;
+
+          const rowsA = filteredPatients.filter((row) => (row[dimension] || 'Unknown') === valueA);
+          const rowsB = filteredPatients.filter((row) => (row[dimension] || 'Unknown') === valueB);
+
+          const summaryA = summarizeGroup(rowsA);
+          const summaryB = summarizeGroup(rowsB);
+
+          if (comparisonChart) {
+            comparisonChart.destroy();
+          }
+
+          const ctx = document.getElementById('comparisonChart').getContext('2d');
+          comparisonChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['Avg Glucose', 'Avg Stability', 'High Risk Share'],
+              datasets: [
+                {
+                  label: `${valueA || 'Cohort A'} (n=${summaryA.count})`,
+                  data: [summaryA.avgGlucose, summaryA.avgStability, summaryA.highRiskRate],
+                  backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                },
+                {
+                  label: `${valueB || 'Cohort B'} (n=${summaryB.count})`,
+                  data: [summaryB.avgGlucose, summaryB.avgStability, summaryB.highRiskRate],
+                  backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'top' },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: { color: '#e2e8f0' },
+                },
+              },
+            },
+          });
+        }
+
+        function ensureMap() {
+          if (map) {
+            return;
+          }
+          map = L.map('researchMap').setView([7.9465, -1.0232], 6);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 10,
+            attribution: '&copy; OpenStreetMap contributors',
+          }).addTo(map);
+          mapLayer = L.layerGroup().addTo(map);
+        }
+
+        function updateMap(filteredPatients) {
+          ensureMap();
+          mapLayer.clearLayers();
+
+          const buckets = {};
+          filteredPatients.forEach((row) => {
+            const region = row.region || 'Unknown';
+            if (!buckets[region]) {
+              buckets[region] = {
+                patientCount: 0,
+                highRiskCount: 0,
+                glucoseValues: [],
+              };
+            }
+            buckets[region].patientCount += 1;
+            if (row.risk_band === 'High') {
+              buckets[region].highRiskCount += 1;
+            }
+            if (typeof row.avg_glucose === 'number') {
+              buckets[region].glucoseValues.push(row.avg_glucose);
+            }
+          });
+
+          Object.entries(buckets).forEach(([region, stats]) => {
+            const coordinates = analytics.region_coordinates[region] || analytics.region_coordinates.Other || [7.9465, -1.0232];
+            const avgGlucose = mean(stats.glucoseValues);
+            const riskShare = percent(stats.highRiskCount, stats.patientCount);
+
+            const marker = L.circleMarker(coordinates, {
+              radius: Math.max(6, Math.min(22, 4 + stats.patientCount * 2.2)),
+              color: riskShare >= 50 ? '#b91c1c' : riskShare >= 25 ? '#ea580c' : '#2563eb',
+              fillColor: riskShare >= 50 ? '#ef4444' : riskShare >= 25 ? '#fb923c' : '#60a5fa',
+              fillOpacity: 0.65,
+              weight: 2,
+            });
+
+            marker.bindPopup(
+              `<strong>${region}</strong><br>` +
+              `Patients: ${stats.patientCount}<br>` +
+              `High-risk share: ${riskShare.toFixed(1)}%<br>` +
+              `Average glucose: ${avgGlucose === null ? 'N/A' : `${avgGlucose.toFixed(1)} mg/dL`}`
+            );
+            marker.addTo(mapLayer);
+          });
+        }
+
+        function refreshAll() {
+          const filtered = getFilteredPatients();
+          stabilityThresholdLabel.textContent = stabilityThreshold.value;
+          const preferredA = compareGroupA.value || (bootState ? bootState.cohort_a : '');
+          const preferredB = compareGroupB.value || (bootState ? bootState.cohort_b : '');
+
+          updateKpis(filtered);
+          updateTrendChart(filtered);
+          refreshComparisonSelectors(filtered, preferredA, preferredB);
+          updateComparisonChart(filtered);
+          updateMap(filtered);
+          syncUrlAndExportLink();
+          bootState = null;
+        }
+
+        function refreshComparisonOnly() {
+          const filtered = getFilteredPatients();
+          updateComparisonChart(filtered);
+          updateMap(filtered);
+          syncUrlAndExportLink();
+        }
+
+        fillSelect(filterAgeGroup, analytics.filter_options.age_groups || []);
+        fillSelect(filterGender, analytics.filter_options.genders || []);
+        fillSelect(filterRegion, analytics.filter_options.regions || []);
+        fillSelect(filterDiabetesType, analytics.filter_options.diabetes_types || []);
+        fillSelect(filterLocality, analytics.filter_options.localities || []);
+
+        bootState = getStateFromUrl();
+        applyStateToControls(bootState);
+
+        filterAgeGroup.addEventListener('change', refreshAll);
+        filterGender.addEventListener('change', refreshAll);
+        filterRegion.addEventListener('change', refreshAll);
+        filterDiabetesType.addEventListener('change', refreshAll);
+        filterLocality.addEventListener('change', refreshAll);
+        stabilityThreshold.addEventListener('input', refreshAll);
+
+        compareDimension.addEventListener('change', refreshAll);
+        compareGroupA.addEventListener('change', refreshComparisonOnly);
+        compareGroupB.addEventListener('change', refreshComparisonOnly);
+
+        bindChartExportButtons();
+
+        refreshAll();
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

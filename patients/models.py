@@ -9,6 +9,12 @@ class Patient(models.Model):
         ('F', 'Female'),
         ('O', 'Other'),
     ]
+    LOCALITY_CHOICES = [
+        ('Urban', 'Urban'),
+        ('Rural', 'Rural'),
+        ('Peri-Urban', 'Peri-Urban'),
+        ('Unknown', 'Unknown'),
+    ]
 
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
@@ -17,6 +23,8 @@ class Patient(models.Model):
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
+    region = models.CharField(max_length=64, blank=True, db_index=True)
+    locality_type = models.CharField(max_length=20, choices=LOCALITY_CHOICES, blank=True, db_index=True)
     emergency_contact = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
