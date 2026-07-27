@@ -65,6 +65,23 @@
 {% endblock %}
 
 {% block content %}
+  <div class="guide-panel p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <div class="guide-eyebrow mb-1">Research workspace</div>
+        <h2 class="guide-title h4 mb-1">Review the cohort, compare groups, and spot patterns</h2>
+        <p class="guide-copy">This page is the recruiter-friendly overview: it summarizes the sample cohort, highlights clinical streams, and opens each dossier for deeper review.</p>
+      </div>
+      {% if not specialist_limited %}
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-primary fw-semibold shadow-sm rounded-3" href="{% url 'patients:parametric_tests' %}">
+            <i class="bi bi-bar-chart-line-fill me-1"></i> Next: Statistical Tests Lab
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
   <!-- Top Action Header -->
   <div class="d-md-flex justify-content-between align-items-center mb-4">
     <div>

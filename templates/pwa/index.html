@@ -10,6 +10,17 @@
 </head>
 <body>
   <div class="container">
+    <section class="guide-panel p-4 my-4">
+      <div class="guide-eyebrow mb-1">Sample walk-through</div>
+      <h1 class="guide-title">Explore the GlucoBridge cohort story</h1>
+      <p class="guide-copy">Load the demo dataset and move through the research dashboard, statistical tests, assessment review, and patient dashboard in a recruiter-friendly tour.</p>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a class="btn btn-primary fw-semibold shadow-sm" href="{% url 'patients:demo_research_exploration' %}">
+          <i class="bi bi-rocket-takeoff me-1"></i> Load Demo Dataset
+        </a>
+        <a class="btn btn-outline-secondary fw-semibold" href="{% url 'patients:login' %}">Sign in normally</a>
+      </div>
+    </section>
     <header>
       <div>
         <h1>GlucoBridge Patient Directory</h1>

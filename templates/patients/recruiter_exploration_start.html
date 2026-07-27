@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Recruiter Exploration Start - GlucoBridge{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .start-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+  }
+  .hero-strip {
+    border-radius: 16px;
+    background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 58%, #99f6e4 100%);
+    color: #f0fdfa;
+  }
+  .start-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #0f766e;
+    background: #ccfbf1;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .explore-option {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem;
+    background: #f8fafc;
+  }
+  .explore-option p {
+    margin: 0.6rem 0 0;
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.45;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+  <div class="col-12 col-lg-9">
+    <div class="hero-strip p-4 p-md-5 mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+          <div class="fw-semibold text-uppercase small opacity-75 mb-1">Recruiter exploration</div>
+          <h1 class="h3 fw-bold mb-2">Choose where to explore first</h1>
+          <p class="mb-0" style="max-width: 690px;">
+            This guided demo loads a clean sample cohort and opens a focused area immediately, so you can evaluate platform depth in under two minutes.
+          </p>
+        </div>
+        <a class="btn btn-light fw-semibold rounded-3" href="{% url 'patients:login' %}">
+          <i class="bi bi-arrow-left me-1"></i> Back to Login
+        </a>
+      </div>
+    </div>
+
+    <div class="start-card p-3 p-md-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="start-pill"><i class="bi bi-heart-pulse"></i> Recommended first stop</span>
+      </div>
+
+      <div class="explore-option mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <h2 class="h5 fw-bold text-dark mb-0">Statistical Tests Lab</h2>
+          <a class="btn btn-primary fw-semibold" href="{% url 'patients:demo_research_exploration' %}?start=stats_lab">
+            Open Statistical Tests Lab
+          </a>
+        </div>
+        <p>
+          Run t-tests, ANOVA, correlation, regression, and chi-square analyses on the sample cohort with built-in assumption checks and plain-language result interpretation, so recruiters can quickly see evidence quality and analytical maturity.
+        </p>
+      </div>
+
+      <div class="explore-option mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <h2 class="h6 fw-bold text-dark mb-0">Research Workspace</h2>
+          <a class="btn btn-outline-primary fw-semibold" href="{% url 'patients:demo_research_exploration' %}?start=research_workspace">
+            Open Research Workspace
+          </a>
+        </div>
+        <p>
+          Review de-identified patient cohort records, trend summaries, and cross-patient clinical context in a single dashboard tailored for fast discovery and comparison.
+        </p>
+      </div>
+
+      <div class="explore-option">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <h2 class="h6 fw-bold text-dark mb-0">Cohort Insights Snapshot</h2>
+          <a class="btn btn-outline-primary fw-semibold" href="{% url 'patients:demo_research_exploration' %}?start=cohort_insights">
+            Open Cohort Insights
+          </a>
+        </div>
+        <p>
+          Start from the cohort overview and move directly into filtered comparisons by demographics and risk patterns to evaluate practical clinical storytelling speed.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

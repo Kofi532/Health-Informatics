@@ -6,6 +6,8 @@ app_name = 'patients'
 
 urlpatterns = [
     path('', views.pwa_app, name='pwa_app'),
+    path('demo/research/start/', views.recruiter_exploration_start, name='recruiter_exploration_start'),
+    path('demo/research/', views.demo_research_exploration, name='demo_research_exploration'),
     path('patients/<int:pk>/', views.patient_detail, name='patient_detail'),
     path('patients/<int:pk>/research/', views.researcher_patient_detail, name='researcher_patient_detail'),
     path('research/', views.researcher_patient_list, name='researcher_patient_list'),

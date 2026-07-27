@@ -2,8 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from .forms import SignUpForm
-from django.contrib.auth import login
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Group, User
+from django.core.management import call_command
 from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta, datetime
@@ -452,6 +453,42 @@ class RoleBasedLoginView(LoginView):
 
     def get_success_url(self):
         return reverse(get_role_landing_url_name(self.request.user))
+
+
+def recruiter_exploration_start(request):
+    """Show recruiters a quick chooser for where to begin the demo exploration."""
+    return render(request, 'patients/recruiter_exploration_start.html')
+
+
+def demo_research_exploration(request):
+    """Seed the demo cohort and sign the visitor into the researcher sample account."""
+    start_key = request.GET.get('start', 'stats_lab')
+    start_routes = {
+        'stats_lab': 'patients:parametric_tests',
+        'research_workspace': 'patients:researcher_patient_list',
+        'cohort_insights': 'patients:researcher_patient_list',
+    }
+    destination = start_routes.get(start_key, 'patients:parametric_tests')
+
+    try:
+        call_command('populate_research_demo_data', replace=True)
+    except Exception:
+        messages.error(request, 'The sample cohort could not be prepared right now. Please try again.')
+        return redirect('patients:login')
+
+    demo_username = 'researcher_stats_demo'
+    demo_password = 'demo12345'
+    demo_user = authenticate(request, username=demo_username, password=demo_password)
+    if demo_user is None:
+        demo_user = User.objects.filter(username=demo_username).first()
+
+    if demo_user is None:
+        messages.error(request, 'The demo researcher account could not be loaded.')
+        return redirect('patients:login')
+
+    login(request, demo_user, backend='django.contrib.auth.backends.ModelBackend')
+    messages.success(request, 'Demo cohort loaded. Welcome to the research workspace.')
+    return redirect(destination)
 
 
 def get_physician_users_queryset():

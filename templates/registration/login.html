@@ -29,6 +29,17 @@
 {% block content %}
     <div class="row justify-content-center my-4">
         <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+
+            <div class="guide-panel p-4 mb-3">
+                <div class="guide-eyebrow mb-1">Recruiter preview</div>
+                <h2 class="guide-title h5">Explore a sample cohort analysis</h2>
+                <p class="guide-copy small">Load the demo dataset, sign into the research workspace, and step through the cohort, statistical tests, assessment, and dashboard views.</p>
+                <div class="d-grid mt-3">
+                    <a class="btn btn-primary btn-lg fw-semibold shadow-sm rounded-3" href="{% url 'patients:recruiter_exploration_start' %}">
+                        <i class="bi bi-stars me-1"></i> Recruiter Exploration
+                    </a>
+                </div>
+            </div>
             
             <!-- Error Handling at the top of the interface block -->
             {% if form.errors %}

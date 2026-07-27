@@ -154,6 +154,24 @@
 {% endblock %}
 
 {% block content %}
+<div class="guide-panel p-4 mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <div class="guide-eyebrow mb-1">Statistical tests lab</div>
+      <h2 class="guide-title h4 mb-1">Turn the cohort into evidence</h2>
+      <p class="guide-copy">Run t-tests, ANOVA, correlation, regression, and chi-square checks on the sample cohort. The lab explains each method and flags key assumptions before you interpret the result.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-light fw-semibold rounded-3" href="{% url 'patients:researcher_patient_list' %}" style="background:#eef2ff; color:#312e81; border-color:#c7d2fe;">
+        <i class="bi bi-arrow-left me-1"></i> Back to Research Workspace
+      </a>
+      <a class="btn btn-primary fw-semibold shadow-sm rounded-3" href="{% url 'patients:diabetes_assessment_entry' %}">
+        <i class="bi bi-clipboard2-pulse me-1"></i> Next: Assessment Review
+      </a>
+    </div>
+  </div>
+</div>
+
 <!-- Hero Header -->
 <div class="stats-hero p-4 p-md-5 mb-4">
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
