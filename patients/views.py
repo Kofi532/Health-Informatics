@@ -2306,9 +2306,8 @@ def export_research_excel(request):
     return response
 
 
-@login_required
 def pwa_app(request):
-    return redirect(get_role_landing_url_name(request.user))
+    return redirect('patients:login')
 
 
 @login_required

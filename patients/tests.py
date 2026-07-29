@@ -26,6 +26,12 @@ class BlogResearchDataTests(TestCase):
         self.assertEqual(patient.first_name, 'newpatient')
         self.assertTrue(UserProfile.objects.filter(user=user, patient=patient).exists())
 
+    def test_root_url_redirects_to_login_page(self):
+        response = self.client.get(reverse('patients:pwa_app'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('patients:login'))
+
     def test_patient_blog_post_and_comment_are_linked_to_research_data(self):
         self.client.force_login(self.user)
 
