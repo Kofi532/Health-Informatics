@@ -1,8 +1,16 @@
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+SNAKEBITE_PROJECT_DIR = BASE_DIR / 'snakebite_care_gh'
+
+# Ensure the nested Snakebite project package is importable from this Django project.
+if SNAKEBITE_PROJECT_DIR.exists():
+    snakebite_path = str(SNAKEBITE_PROJECT_DIR)
+    if snakebite_path not in sys.path:
+        sys.path.insert(0, snakebite_path)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'replace-me-with-a-secure-secret-key')
 
@@ -28,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'patients',
+    'snakebite',
     'rest_framework',
     'corsheaders',
 ]

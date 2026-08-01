@@ -176,7 +176,7 @@
                 <p class="hint">Patient workflows, dashboards, and analytics modules.</p>
             </a>
 
-            <a class="tile snakebite" href="http://127.0.0.1:8001/" aria-label="Open Snakebite Care project">
+            <a class="tile snakebite" href="{% url 'snakebite:home' %}" aria-label="Open Snakebite Care project">
                 <span class="tag">Django App</span>
                 <h2>Snakebite Care Ghana</h2>
                 <p class="hint">First-aid guidance, symptom triage, and antivenom resource map.</p>
@@ -184,7 +184,7 @@
         </section>
 
         <footer class="foot">
-            Tip: run this project on port 8000 and Snakebite on port 8001 for one-click switching.
+            Tip: both projects now run from the same site. Use this selector to switch quickly.
         </footer>
     </main>
 </body>
