@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identify Symptoms | Snakebite Care GH</title>
+  <style>
+    :root {
+      --bg: #0f3822;
+      --bg-soft: #123e27;
+      --panel: rgba(255, 255, 255, 0.07);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #ffffff;
+      --muted: #b8c5bb;
+      --accent: #9fe59a;
+      --danger: #ff695f;
+      --danger-soft: rgba(255, 105, 97, 0.2);
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(159, 229, 154, 0.12), transparent 32%),
+        linear-gradient(180deg, #123d26 0%, var(--bg) 48%, #0b2818 100%);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 18px 14px 106px;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .back {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.08rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .group {
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+    }
+
+    .group-title {
+      margin: 0 0 10px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #d8e4da;
+    }
+
+    .symptom-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .symptom-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .symptom-item input {
+      margin-top: 3px;
+      transform: scale(1.1);
+      accent-color: var(--accent);
+    }
+
+    .icon {
+      width: 26px;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .label {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .label strong {
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    .label small {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .submit {
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin: 6px 0 16px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      color: #0f3822;
+      background: var(--accent);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .result-card {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: var(--shadow);
+    }
+
+    .alert {
+      margin: 0 0 12px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      background: rgba(159, 229, 154, 0.14);
+      border: 1px solid rgba(159, 229, 154, 0.35);
+      color: #ddf5da;
+    }
+
+    .alert.high {
+      background: var(--danger-soft);
+      border-color: rgba(255, 105, 97, 0.65);
+      color: #ffd8d4;
+    }
+
+    .result-meta {
+      margin: 0;
+      font-size: 0.93rem;
+      color: #eaf2eb;
+    }
+
+    .result-meta + .result-meta {
+      margin-top: 6px;
+    }
+
+    .actions-title {
+      margin: 12px 0 8px;
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #e1ece3;
+    }
+
+    .actions {
+      margin: 0;
+      padding-left: 18px;
+      color: #f2f8f3;
+      font-size: 0.9rem;
+    }
+
+    .actions li {
+      margin-bottom: 6px;
+      line-height: 1.35;
+    }
+
+    .map-link {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      padding: 11px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      color: #0f3822;
+      background: #d7f2d4;
+    }
+
+    .tabs {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.92) 36%, rgba(11, 40, 24, 0.98));
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .tabs-inner {
+      max-width: 460px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .tab {
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+    }
+
+    .tab.active {
+      color: #0f3822;
+      background: var(--accent);
+      border-color: rgba(159, 229, 154, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="top-row">
+      <a href="{% url 'snakebite:home' %}" class="back" aria-label="Back to home">&larr;</a>
+      <div>
+        <h1>Identify Symptoms</h1>
+        <p class="subtitle">Select all signs present before assessment</p>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      {% for body_system, grouped in symptoms_by_system.items %}
+        <section class="group">
+          <h2 class="group-title">{{ body_system }}</h2>
+          {% for entry in grouped %}
+            <label class="symptom-item" for="symptom-{{ entry.symptom.slug }}">
+              <input
+                type="checkbox"
+                id="symptom-{{ entry.symptom.slug }}"
+                name="symptoms"
+                value="{{ entry.symptom.slug }}"
+                {% if entry.symptom.slug in selected_symptoms %}checked{% endif %}
+              >
+              <span class="icon" aria-hidden="true">
+                {% if entry.icon == 'lungs' %}🫁{% elif entry.icon == 'brain' %}🧠{% elif entry.icon == 'drop' %}🩸{% elif entry.icon == 'kidney' %}🧪{% elif entry.icon == 'heart' %}❤️{% elif entry.icon == 'bandage' %}🩹{% else %}🩺{% endif %}
+              </span>
+              <span class="label">
+                <strong>{{ entry.symptom.name }}</strong>
+                <small>{{ entry.symptom.description|default:"No additional description" }}</small>
+              </span>
+            </label>
+          {% endfor %}
+        </section>
+      {% empty %}
+        <section class="group">
+          <p class="subtitle">No symptom checklist is available yet.</p>
+        </section>
+      {% endfor %}
+
+      <button class="submit" type="submit">POSSIBLE ENVENOMATION &amp; NEXT STEPS</button>
+    </form>
+
+    {% if assessment_result %}
+      <section class="result-card" aria-live="polite">
+        <p class="alert {% if assessment_result.risk_level == 'HIGH RISK' %}high{% endif %}">
+          {% if assessment_result.risk_level == 'HIGH RISK' %}
+            HIGH RISK ALERT: Urgent referral and emergency management advised.
+          {% else %}
+            {{ assessment_result.risk_level }}: Continue monitoring and follow guidance.
+          {% endif %}
+        </p>
+
+        <p class="result-meta"><strong>Possible Envenomation:</strong> {{ assessment_result.predicted_envenomation }}</p>
+        <p class="result-meta"><strong>Severity Score:</strong> {{ assessment_result.severity_score }}</p>
+
+        <h3 class="actions-title">Recommended Actions</h3>
+        <ul class="actions">
+          {% for action in assessment_result.recommended_actions %}
+            <li>{{ action }}</li>
+          {% endfor %}
+        </ul>
+
+        <a class="map-link" href="{% url 'snakebite:antivenom_map' %}">Nearest Antivenom Facility Map</a>
+      </section>
+    {% endif %}
+  </main>
+
+  <nav class="tabs" aria-label="Symptoms page tabs">
+    <div class="tabs-inner">
+      <div class="tab active">Symptoms</div>
+      <div class="tab">Guide</div>
+      <div class="tab">History</div>
+    </div>
+  </nav>
+</body>
+</html>

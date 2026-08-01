@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Showcase</title>
+    <style>
+        :root {
+            --ink: #14213d;
+            --accent: #fca311;
+            --paper: #f6f7f8;
+            --card: rgba(255, 255, 255, 0.86);
+            --teal: #2a9d8f;
+            --shadow: 0 22px 50px rgba(20, 33, 61, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 16% 22%, rgba(252, 163, 17, 0.26), transparent 34%),
+                radial-gradient(circle at 84% 78%, rgba(42, 157, 143, 0.20), transparent 36%),
+                linear-gradient(140deg, #eef2f5, var(--paper));
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .shell {
+            width: min(980px, 100%);
+            background: var(--card);
+            border: 1px solid rgba(20, 33, 61, 0.12);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            animation: rise 0.55s ease-out;
+        }
+
+        .intro {
+            padding: 26px 26px 12px;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: 999px;
+            background: rgba(20, 33, 61, 0.08);
+            letter-spacing: 0.06em;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 12px 0 10px;
+            font-size: clamp(28px, 4vw, 40px);
+            line-height: 1.1;
+        }
+
+        p {
+            margin: 0;
+            font-size: 16px;
+            max-width: 720px;
+            opacity: 0.9;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            padding: 18px 22px 24px;
+        }
+
+        .tile {
+            position: relative;
+            border-radius: 16px;
+            border: 1px solid rgba(20, 33, 61, 0.12);
+            background: #fff;
+            padding: 18px;
+            text-decoration: none;
+            color: var(--ink);
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+
+        .tile:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(20, 33, 61, 0.14);
+            border-color: rgba(20, 33, 61, 0.3);
+        }
+
+        .tile h2 {
+            margin: 6px 0 8px;
+            font-size: 24px;
+            line-height: 1.2;
+        }
+
+        .tag {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: #f0f3f7;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .health .tag {
+            background: rgba(42, 157, 143, 0.18);
+        }
+
+        .snakebite .tag {
+            background: rgba(252, 163, 17, 0.22);
+        }
+
+        .foot {
+            border-top: 1px solid rgba(20, 33, 61, 0.1);
+            padding: 12px 22px 18px;
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 760px) {
+            .grid {
+                grid-template-columns: 1fr;
+                padding-top: 8px;
+            }
+
+            .intro {
+                padding: 22px 20px 10px;
+            }
+
+            .foot {
+                padding: 12px 20px 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="intro">
+            <span class="eyebrow">Recruiter Preview</span>
+            <h1>Choose a project to explore</h1>
+            <p>
+                This workspace now hosts two separate Django projects that share one virtual environment for easier maintenance and smaller storage usage.
+            </p>
+        </section>
+
+        <section class="grid">
+            <a class="tile health" href="/health/" aria-label="Open Health Informatics project">
+                <span class="tag">Django App</span>
+                <h2>Health Informatics</h2>
+                <p class="hint">Patient workflows, dashboards, and analytics modules.</p>
+            </a>
+
+            <a class="tile snakebite" href="http://127.0.0.1:8001/" aria-label="Open Snakebite Care project">
+                <span class="tag">Django App</span>
+                <h2>Snakebite Care Ghana</h2>
+                <p class="hint">First-aid guidance, symptom triage, and antivenom resource map.</p>
+            </a>
+        </section>
+
+        <footer class="foot">
+            Tip: run this project on port 8000 and Snakebite on port 8001 for one-click switching.
+        </footer>
+    </main>
+</body>
+</html>

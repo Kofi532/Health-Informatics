@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snakes in My Area | Snakebite Care GH</title>
+  <style>
+    :root {
+      --bg: #0f3822;
+      --panel: rgba(255, 255, 255, 0.07);
+      --panel-border: rgba(255, 255, 255, 0.13);
+      --text: #ffffff;
+      --muted: #b8c5bb;
+      --accent: #9fe59a;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+      --hemo: #d94141;
+      --neuro: #7a3dd8;
+      --cyto: #cc7a21;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(159, 229, 154, 0.11), transparent 30%),
+        linear-gradient(180deg, #123d26 0%, var(--bg) 45%, #0b2818 100%);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 16px 14px 94px;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .back {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      text-decoration: none;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 20px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.06rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .toolbar {
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 13px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+    }
+
+    .toolbar form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .region-select,
+    .filter-btn {
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      padding: 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .filter-btn {
+      font-weight: 700;
+      background: rgba(159,229,154,0.18);
+      border-color: rgba(159,229,154,0.38);
+      cursor: pointer;
+    }
+
+    .cards {
+      display: grid;
+      gap: 12px;
+      max-height: calc(100vh - 255px);
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+
+    .card {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+    }
+
+    .thumb {
+      width: 90px;
+      height: 90px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.13);
+      display: grid;
+      place-items: center;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .thumb-fallback {
+      font-size: 30px;
+    }
+
+    .name {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .scientific {
+      margin: 5px 0 9px;
+      color: #d8e4da;
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .badge.hemotoxic {
+      background: var(--hemo);
+    }
+
+    .badge.neurotoxic {
+      background: var(--neuro);
+    }
+
+    .badge.cytotoxic {
+      background: var(--cyto);
+    }
+
+    .region-pill {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .empty {
+      margin: 10px 0;
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 8, 5, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 12px;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 460px;
+      border-radius: 16px;
+      padding: 14px;
+      background: #153a27;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: var(--shadow);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .close {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .modal-copy {
+      color: #dfe9e2;
+      font-size: 0.9rem;
+      line-height: 1.42;
+      margin: 10px 0 0;
+      white-space: pre-line;
+    }
+
+    .tabs {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.9) 36%, rgba(11, 40, 24, 0.98));
+    }
+
+    .tabs-inner {
+      max-width: 460px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .tab {
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+    }
+
+    .tab.active {
+      color: #0f3822;
+      background: var(--accent);
+      border-color: rgba(159, 229, 154, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <header class="top">
+      <a class="back" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
+      <div>
+        <h1 class="title">Snakes in My Area</h1>
+        <p class="subtitle">Regional snake profiles and venom risk hints</p>
+      </div>
+    </header>
+
+    <section class="toolbar" aria-label="Region filter">
+      <form method="get">
+        <select class="region-select" id="region_id" name="region_id">
+          {% for region in regions %}
+            <option value="{{ region.id }}" {% if active_region_id == region.id|stringformat:'s' %}selected{% endif %}>{{ region.name }}</option>
+          {% endfor %}
+        </select>
+        <button class="filter-btn" type="submit">Apply</button>
+      </form>
+    </section>
+
+    <section class="cards" aria-label="Snake cards">
+      {% for snake in snakes %}
+        <a
+          class="card"
+          href="?region_id={{ active_region_id }}&snake_id={{ snake.id }}"
+          aria-label="Open profile for {{ snake.common_name }}"
+        >
+          <div class="thumb">
+            {% if snake.image %}
+              <img src="{{ snake.image.url }}" alt="{{ snake.common_name }} image">
+            {% else %}
+              <span class="thumb-fallback" aria-hidden="true">🐍</span>
+            {% endif %}
+          </div>
+          <div>
+            <p class="name">{{ snake.common_name }}</p>
+            <p class="scientific">{{ snake.scientific_name }}</p>
+            <span class="badge {{ snake.venom_type }}">{{ snake.get_venom_type_display }}</span>
+            <div class="region-pill">{{ active_region.name|default:'All Regions' }}</div>
+          </div>
+        </a>
+      {% empty %}
+        <p class="empty">No snake profiles found for this region.</p>
+      {% endfor %}
+    </section>
+  </main>
+
+  {% if selected_snake %}
+    <aside class="modal" aria-label="Snake profile details">
+      <section class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="name">{{ selected_snake.common_name }}</p>
+            <p class="scientific">{{ selected_snake.scientific_name }}</p>
+          </div>
+          <a class="close" href="?region_id={{ active_region_id }}">Close</a>
+        </div>
+        <span class="badge {{ selected_snake.venom_type }}">{{ selected_snake.get_venom_type_display }}</span>
+        <p class="modal-copy">{{ selected_snake.description|default:'No detailed description added yet.' }}</p>
+        <p class="modal-copy"><strong>Visual Features:</strong> {{ selected_snake.visual_features|default:'No visual feature guide added yet.' }}</p>
+      </section>
+    </aside>
+  {% endif %}
+
+  <nav class="tabs" aria-label="Snakes page tabs">
+    <div class="tabs-inner">
+      <div class="tab active">Snakes</div>
+      <div class="tab">Map</div>
+      <div class="tab">Search</div>
+    </div>
+  </nav>
+</body>
+</html>

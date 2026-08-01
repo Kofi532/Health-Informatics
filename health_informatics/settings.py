@@ -99,9 +99,9 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGIN_URL = '/health/login/'
+LOGIN_REDIRECT_URL = '/health/'
+LOGOUT_REDIRECT_URL = '/health/login/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

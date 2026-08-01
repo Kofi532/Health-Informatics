@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snakebite Care GH</title>
+  <style>
+    :root {
+      --bg: #0f3822;
+      --bg-soft: #123e27;
+      --panel: rgba(255, 255, 255, 0.07);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #ffffff;
+      --muted: #b8c5bb;
+      --accent: #9fe59a;
+      --accent-soft: #dff4dc;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(159, 229, 154, 0.12), transparent 32%),
+        linear-gradient(180deg, #123d26 0%, var(--bg) 48%, #0b2818 100%);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 20px 14px 88px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 18px 12px 10px;
+    }
+
+    .logo-badge {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 14px;
+      border-radius: 26px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: var(--shadow);
+      font-size: 40px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.65rem;
+      line-height: 1.05;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--accent-soft);
+      font-style: italic;
+      font-size: 0.98rem;
+      letter-spacing: 0.02em;
+    }
+
+    .menu {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 16px;
+      border-radius: 18px;
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .card:active {
+      transform: scale(0.985);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(159, 229, 154, 0.45);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(159, 229, 154, 0.15);
+      border: 1px solid rgba(159, 229, 154, 0.25);
+      font-size: 24px;
+    }
+
+    .card-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card-subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .footer-status {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 12px 14px 16px;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.88) 36%, rgba(11, 40, 24, 0.98));
+    }
+
+    .status-pill {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(159, 229, 154, 0.16);
+      border: 1px solid rgba(159, 229, 154, 0.28);
+      color: var(--accent-soft);
+      font-size: 0.92rem;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+
+    .wifi-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      position: relative;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--accent);
+      border-left-color: var(--accent);
+      transform: rotate(45deg);
+      margin-right: 2px;
+    }
+
+    .wifi-icon::before,
+    .wifi-icon::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .wifi-icon::after {
+      inset: 7px;
+    }
+
+    .section-label {
+      margin: 20px 4px 10px;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.76rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    @media (max-width: 380px) {
+      body {
+        padding-inline: 10px;
+      }
+
+      .title {
+        font-size: 1.45rem;
+      }
+
+      .card {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero" aria-label="Snakebite Care GH home">
+      <div class="logo-badge" aria-hidden="true">🛡️🐍</div>
+      <h1 class="title">Snakebite Care GH</h1>
+      <p class="subtitle">Smart. Local. Life-saving.</p>
+    </section>
+
+    <div class="section-label">Quick Access</div>
+
+    <nav class="menu" aria-label="Main navigation">
+      <a class="card" href="{% url 'snakebite:first_aid' %}">
+        <div class="card-icon" aria-hidden="true">🏃</div>
+        <div class="card-content">
+          <p class="card-title">First Aid &amp; Step-by-Step Guide</p>
+          <p class="card-subtitle">Immediate actions, wound care, and what not to do.</p>
+        </div>
+      </a>
+
+      <a class="card" href="{% url 'snakebite:identify_symptoms' %}">
+        <div class="card-icon" aria-hidden="true">🩺</div>
+        <div class="card-content">
+          <p class="card-title">Snake Identification (by Symptoms)</p>
+          <p class="card-subtitle">Match symptoms to likely venom patterns and urgency.</p>
+        </div>
+      </a>
+
+      <a class="card" href="{% url 'snakebite:snakes_in_area' %}">
+        <div class="card-icon" aria-hidden="true">🐍</div>
+        <div class="card-content">
+          <p class="card-title">Snakes in My Area (Biodiversity)</p>
+          <p class="card-subtitle">See regional snake profiles and habitat coverage.</p>
+        </div>
+      </a>
+
+      <a class="card" href="{% url 'snakebite:education_training' %}">
+        <div class="card-icon" aria-hidden="true">🎓</div>
+        <div class="card-content">
+          <p class="card-title">Education &amp; Training</p>
+          <p class="card-subtitle">Guidelines, posters, and training resources for teams.</p>
+        </div>
+      </a>
+
+      <a class="card" href="{% url 'snakebite:antivenom_map' %}">
+        <div class="card-icon" aria-hidden="true">💉</div>
+        <div class="card-content">
+          <p class="card-title">Antivenom Stock Map</p>
+          <p class="card-subtitle">Find stocked facilities and plan the fastest referral.</p>
+        </div>
+      </a>
+
+      <a class="card" href="{% url 'snakebite:resources' %}">
+        <div class="card-icon" aria-hidden="true">➕</div>
+        <div class="card-content">
+          <p class="card-title">More Tools &amp; Resources</p>
+          <p class="card-subtitle">Offline support, contacts, checklists, and updates.</p>
+        </div>
+      </a>
+    </nav>
+  </main>
+
+  <div class="footer-status">
+    <div class="status-pill">
+      <span class="wifi-icon" aria-hidden="true"></span>
+      Works Offline
+    </div>
+  </div>
+</body>
+</html>
