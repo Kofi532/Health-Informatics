@@ -14,6 +14,7 @@ router.register(r'educational-materials', EducationalMaterialViewSet, basename='
 app_name = 'snakebite'
 
 urlpatterns = [
+	path('access/', views.access_view, name='access'),
 	path('', views.home_view, name='home'),
 	path('first-aid/', views.first_aid_view, name='first_aid'),
 	path('identify-symptoms/', views.identify_symptoms_view, name='identify_symptoms'),

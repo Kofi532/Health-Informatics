@@ -13,6 +13,7 @@ if SNAKEBITE_PROJECT_DIR.exists():
         sys.path.insert(0, snakebite_path)
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'replace-me-with-a-secure-secret-key')
+SNAKEBITE_APP_PASSWORD = os.getenv('SNAKEBITE_APP_PASSWORD', 'Dr.EricNyarko')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in {'1', 'true', 'yes', 'on'}
 

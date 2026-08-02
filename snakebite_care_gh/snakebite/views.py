@@ -1,7 +1,11 @@
 from decimal import Decimal
+from hmac import compare_digest
+from urllib.parse import urlencode
 
+from django.conf import settings
 from django.db import transaction
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,6 +24,45 @@ from .serializers import (
 )
 
 
+SNAKEBITE_ACCESS_SESSION_KEY = 'snakebite_access_granted'
+
+
+def snakebite_password_required(view_func):
+	def wrapped_view(request, *args, **kwargs):
+		if request.session.get(SNAKEBITE_ACCESS_SESSION_KEY):
+			return view_func(request, *args, **kwargs)
+
+		query = urlencode({'next': request.get_full_path()})
+		return redirect(f"{reverse('snakebite:access')}?{query}")
+
+	return wrapped_view
+
+
+def access_view(request):
+	next_url = request.GET.get('next') or request.POST.get('next') or reverse('snakebite:home')
+	if not next_url.startswith('/snakebite/'):
+		next_url = reverse('snakebite:home')
+
+	error_message = ''
+	if request.method == 'POST':
+		password_input = request.POST.get('password', '')
+		expected_password = getattr(settings, 'SNAKEBITE_APP_PASSWORD', 'Dr.EricNyarko')
+		if compare_digest(password_input, expected_password):
+			request.session[SNAKEBITE_ACCESS_SESSION_KEY] = True
+			return redirect(next_url)
+		error_message = 'Incorrect password. Please try again.'
+
+	return render(
+		request,
+		'snakebite/access.html',
+		{
+			'next_url': next_url,
+			'error_message': error_message,
+		},
+	)
+
+
+@snakebite_password_required
 def home_view(request):
 	return render(request, 'snakebite/home.html')
 
@@ -29,6 +72,7 @@ def home(request):
 	return home_view(request)
 
 
+@snakebite_password_required
 def first_aid_view(request):
 	first_aid_steps = FirstAidStep.objects.order_by('step_number')
 	emergency_number = '112'
@@ -42,6 +86,7 @@ def first_aid_view(request):
 	)
 
 
+@snakebite_password_required
 def identify_symptoms_view(request):
 	symptoms = Symptom.objects.order_by('body_system', 'name')
 	symptoms_by_system = {}
@@ -91,6 +136,7 @@ def identify_symptoms_view(request):
 	)
 
 
+@snakebite_password_required
 def snakes_in_area_view(request):
 	regions = Region.objects.order_by('name')
 	active_region_id = request.GET.get('region_id')
@@ -130,6 +176,7 @@ def snakes_in_area_view(request):
 	)
 
 
+@snakebite_password_required
 def education_training_view(request):
 	category_config = [
 		{'key': 'guideline', 'label': 'Guidelines', 'icon': 'clipboard'},
@@ -188,6 +235,7 @@ def education_training_view(request):
 	)
 
 
+@snakebite_password_required
 def antivenom_map_view(request):
 	facilities = HealthFacility.objects.select_related('region').filter(antivenom_available=True).order_by('region__name', 'name')
 	facilities_payload = []
@@ -218,6 +266,7 @@ def antivenom_map_view(request):
 	)
 
 
+@snakebite_password_required
 def resources_view(request):
 	return render(request, 'snakebite/resources.html')
 
