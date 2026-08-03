@@ -2,7 +2,6 @@ from decimal import Decimal
 from hmac import compare_digest
 from urllib.parse import urlencode
 
-from django.conf import settings
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -46,7 +45,7 @@ def access_view(request):
 	error_message = ''
 	if request.method == 'POST':
 		password_input = request.POST.get('password', '')
-		expected_password = getattr(settings, 'SNAKEBITE_APP_PASSWORD', 'Dr.EricNyarko')
+		expected_password = 'Dr.EricNyarko'
 		if compare_digest(password_input, expected_password):
 			request.session[SNAKEBITE_ACCESS_SESSION_KEY] = True
 			return redirect(next_url)
