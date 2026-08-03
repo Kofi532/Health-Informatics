@@ -13,13 +13,12 @@
   <style>
     :root {
       --bg: #0f3822;
-      --panel: rgba(255, 255, 255, 0.07);
-      --panel-border: rgba(255, 255, 255, 0.13);
-      --text: #ffffff;
-      --muted: #b8c5bb;
+      --panel: rgba(255, 255, 255, 0.08);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fff6;
+      --muted: #cfe2d1;
       --accent: #9fe59a;
-      --ok-bg: rgba(72, 214, 132, 0.2);
-      --ok-border: rgba(72, 214, 132, 0.45);
+      --ok-text: #81f0b1;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
     }
 
@@ -33,14 +32,14 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at top, rgba(159, 229, 154, 0.11), transparent 30%),
-        linear-gradient(180deg, #123d26 0%, var(--bg) 45%, #0b2818 100%);
+        radial-gradient(circle at top, rgba(159, 229, 154, 0.16), transparent 30%),
+        linear-gradient(180deg, #123d26 0%, var(--bg) 55%, #0b2818 100%);
     }
 
     body {
       display: flex;
       justify-content: center;
-      padding: 16px 14px 92px;
+      padding: 14px 14px 102px;
     }
 
     .screen {
@@ -48,16 +47,22 @@
       max-width: 460px;
     }
 
-    .top {
+    .top-bar {
       display: flex;
       align-items: center;
       gap: 12px;
+      padding: 12px 10px;
       margin-bottom: 12px;
+      border-radius: 16px;
+      background: rgba(9, 31, 20, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
-    .back {
-      width: 38px;
-      height: 38px;
+    .back-link {
+      width: 40px;
+      height: 40px;
       border-radius: 12px;
       display: grid;
       place-items: center;
@@ -66,19 +71,16 @@
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
       font-size: 20px;
+      line-height: 1;
     }
 
-    .title {
+    .header-copy h1 {
       margin: 0;
-      font-size: 1.04rem;
+      font-size: 0.98rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .subtitle {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
+      letter-spacing: 0.06em;
+      line-height: 1.25;
     }
 
     .map-wrap {
@@ -88,19 +90,24 @@
       box-shadow: var(--shadow);
       margin-bottom: 12px;
       background: #153a27;
+      height: 60vh;
+      min-height: 320px;
     }
 
     #antivenom-map {
       width: 100%;
-      height: 280px;
+      height: 100%;
     }
 
-    .list {
+    .drawer {
       display: grid;
       gap: 10px;
+      max-height: clamp(180px, 33vh, 320px);
+      overflow-y: auto;
+      padding-right: 2px;
     }
 
-    .card {
+    .facility-card {
       border-radius: 14px;
       padding: 12px;
       background: var(--panel);
@@ -108,74 +115,47 @@
       box-shadow: var(--shadow);
     }
 
-    .card-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .name {
+    .facility-name {
       margin: 0;
       font-size: 0.95rem;
+      font-weight: 800;
       line-height: 1.3;
+      text-transform: uppercase;
     }
 
-    .meta {
+    .facility-line {
       margin: 5px 0 0;
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.86rem;
+      line-height: 1.35;
     }
 
-    .badge {
-      border-radius: 999px;
-      padding: 5px 8px;
-      font-size: 0.73rem;
+    .status-ok {
+      margin: 5px 0 0;
+      font-size: 0.86rem;
       font-weight: 700;
-      background: var(--ok-bg);
-      border: 1px solid var(--ok-border);
-      color: #ddf6e8;
-      white-space: nowrap;
+      color: var(--ok-text);
     }
 
-    .price {
-      margin: 10px 0 0;
-      font-size: 0.88rem;
-      color: #deebdf;
+    .green-pin {
+      width: 20px;
+      height: 20px;
+      border-radius: 50% 50% 50% 0;
+      background: #1e7a3e;
+      transform: rotate(-45deg);
+      border: 2px solid #c7f5d2;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
     }
 
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .btn {
-      text-align: center;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.84rem;
-      padding: 9px 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.08);
-      color: #eef5ef;
-    }
-
-    .btn.primary {
-      background: rgba(159, 229, 154, 0.24);
-      border-color: rgba(159, 229, 154, 0.42);
-      color: #e8fbe5;
-    }
-
-    .empty {
-      margin: 0;
-      border-radius: 12px;
-      padding: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
+    .green-pin::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #eafbeb;
+      position: absolute;
+      top: 4px;
+      left: 4px;
     }
 
     .tabs {
@@ -183,8 +163,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.9) 36%, rgba(11, 40, 24, 0.98));
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.92) 30%, rgba(11, 40, 24, 0.98));
     }
 
     .tabs-inner {
@@ -196,10 +176,14 @@
     }
 
     .tab {
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
       padding: 10px 8px;
       border-radius: 12px;
-      font-size: 0.82rem;
+      font-size: 0.76rem;
       font-weight: 700;
       color: var(--muted);
       background: rgba(255, 255, 255, 0.07);
@@ -211,15 +195,21 @@
       background: var(--accent);
       border-color: rgba(159, 229, 154, 0.7);
     }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: #173d2a;
+      color: #f2fff2;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
   </style>
 </head>
 <body>
   <main class="screen">
-    <header class="top">
-      <a class="back" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
-      <div>
-        <h1 class="title">Antivenom Stock Map</h1>
-        <p class="subtitle">Find stocked facilities and contact options fast</p>
+    <header class="top-bar">
+      <a class="back-link" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
+      <div class="header-copy">
+        <h1>ANTIVENOM STOCK MAP</h1>
       </div>
     </header>
 
@@ -227,42 +217,23 @@
       <div id="antivenom-map"></div>
     </section>
 
-    <section class="list" aria-label="Facility list">
-      {% for facility in facilities %}
-        <article class="card">
-          <div class="card-head">
-            <div>
-              <h2 class="name">{{ facility.name }}</h2>
-              <p class="meta">{{ facility.get_facility_type_display }} · {{ facility.region.name }}</p>
-            </div>
-            <span class="badge">In Stock</span>
-          </div>
+    <section class="drawer" aria-label="Nearby facilities list">
+      <article class="facility-card">
+        <h2 class="facility-name">DISTRICT HOSPITAL</h2>
+        <p class="facility-line">Donkorkrom</p>
+        <p class="status-ok">Antivenom available</p>
+        <p class="facility-line">Cost: GHS 300</p>
+      </article>
 
-          <p class="price">
-            {% if facility.antivenom_cost %}
-              Price: GHS {{ facility.antivenom_cost }}
-            {% else %}
-              Price: Not listed
-            {% endif %}
-          </p>
+      <article class="facility-card">
+        <h2 class="facility-name">TEASE HEALTH CENTER</h2>
+        <p class="facility-line">Code: GHS 160 | Antivenom available | Cost: GHS 160</p>
+      </article>
 
-          <div class="actions">
-            {% if facility.latitude is not None and facility.longitude is not None %}
-              <a class="btn primary" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination={{ facility.latitude }},{{ facility.longitude }}">Directions</a>
-            {% else %}
-              <span class="btn">Directions N/A</span>
-            {% endif %}
-
-            {% if facility.contact_number %}
-              <a class="btn" href="tel:{{ facility.contact_number }}">Call Facility</a>
-            {% else %}
-              <span class="btn">No Phone</span>
-            {% endif %}
-          </div>
-        </article>
-      {% empty %}
-        <p class="empty">No facilities currently report antivenom availability.</p>
-      {% endfor %}
+      <article class="facility-card">
+        <h2 class="facility-name">AMANKWAKROM CHPS</h2>
+        <p class="facility-line">Antivenom available | Cost: GHS 160</p>
+      </article>
     </section>
   </main>
 
@@ -270,9 +241,18 @@
 
   <nav class="tabs" aria-label="Antivenom tabs">
     <div class="tabs-inner">
-      <div class="tab active">Map</div>
-      <div class="tab">List</div>
-      <div class="tab">Info</div>
+      <div class="tab active">
+        <span aria-hidden="true">&#128205;</span>
+        <span>Map</span>
+      </div>
+      <div class="tab">
+        <span aria-hidden="true">&#128202;</span>
+        <span>List</span>
+      </div>
+      <div class="tab">
+        <span aria-hidden="true">&#9432;</span>
+        <span>Info</span>
+      </div>
     </div>
   </nav>
 
@@ -307,7 +287,14 @@
 
       var bounds = [];
       validFacilities.forEach(function (facility) {
-        var marker = L.marker([facility.latitude, facility.longitude]).addTo(map);
+        var greenMarker = L.divIcon({
+          className: 'green-pin',
+          iconSize: [20, 20],
+          iconAnchor: [10, 20],
+          popupAnchor: [0, -20]
+        });
+
+        var marker = L.marker([facility.latitude, facility.longitude], { icon: greenMarker }).addTo(map);
         var priceText = facility.antivenom_cost !== null ? 'GHS ' + facility.antivenom_cost : 'Not listed';
         var phoneText = facility.contact_number || 'No contact number';
         marker.bindPopup(

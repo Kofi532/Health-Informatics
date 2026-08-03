@@ -7,12 +7,12 @@
   <style>
     :root {
       --bg: #0f3822;
-      --panel: rgba(255, 255, 255, 0.07);
-      --panel-border: rgba(255, 255, 255, 0.13);
-      --text: #ffffff;
-      --muted: #b8c5bb;
+      --panel: rgba(255, 255, 255, 0.08);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fff6;
+      --muted: #cfe2d1;
       --accent: #9fe59a;
-      --badge: rgba(159, 229, 154, 0.22);
+      --accent-strong: #1e7a3e;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
     }
 
@@ -26,14 +26,14 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at top, rgba(159, 229, 154, 0.11), transparent 30%),
-        linear-gradient(180deg, #123d26 0%, var(--bg) 45%, #0b2818 100%);
+        radial-gradient(circle at top, rgba(159, 229, 154, 0.16), transparent 30%),
+        linear-gradient(180deg, #123d26 0%, var(--bg) 55%, #0b2818 100%);
     }
 
     body {
       display: flex;
       justify-content: center;
-      padding: 16px 14px 90px;
+      padding: 14px 14px 106px;
     }
 
     .screen {
@@ -41,16 +41,22 @@
       max-width: 460px;
     }
 
-    .top {
+    .top-bar {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 12px;
+      padding: 12px 10px;
+      margin-bottom: 14px;
+      border-radius: 16px;
+      background: rgba(9, 31, 20, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
-    .back {
-      width: 38px;
-      height: 38px;
+    .back-link {
+      width: 40px;
+      height: 40px;
       border-radius: 12px;
       display: grid;
       place-items: center;
@@ -59,121 +65,54 @@
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
       font-size: 20px;
+      line-height: 1;
     }
 
-    .title {
+    .header-copy h1 {
       margin: 0;
-      font-size: 1.04rem;
+      font-size: 0.98rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
+      line-height: 1.25;
     }
 
-    .subtitle {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .grid {
+    .modules {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
       margin-bottom: 14px;
     }
 
-    .category {
-      border-radius: 14px;
-      padding: 11px;
+    .module-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 16px;
+      padding: 13px;
+      text-decoration: none;
+      color: var(--text);
       background: var(--panel);
       border: 1px solid var(--panel-border);
       box-shadow: var(--shadow);
     }
 
-    .icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
+    .module-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       display: grid;
       place-items: center;
       background: rgba(159, 229, 154, 0.16);
       border: 1px solid rgba(159, 229, 154, 0.34);
-      margin-bottom: 8px;
-      font-size: 17px;
+      font-size: 1rem;
+      flex: 0 0 40px;
     }
 
-    .category h2 {
+    .module-title {
       margin: 0;
-      font-size: 0.92rem;
-    }
-
-    .total {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 0.8rem;
-    }
-
-    .resources {
-      display: grid;
-      gap: 10px;
-    }
-
-    .resource-card {
-      border-radius: 14px;
-      padding: 12px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: var(--shadow);
-    }
-
-    .resource-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .resource-title {
-      margin: 0;
-      font-size: 0.94rem;
+      font-size: 0.96rem;
       line-height: 1.35;
-    }
-
-    .resource-meta {
-      margin-top: 8px;
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .badge {
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 0.74rem;
       font-weight: 700;
-      background: var(--badge);
-      border: 1px solid rgba(159, 229, 154, 0.38);
-      color: #dcf3d9;
-    }
-
-    .badge.gray {
-      background: rgba(255,255,255,0.12);
-      border-color: rgba(255,255,255,0.2);
-      color: #d6ded8;
-    }
-
-    .link {
-      margin-top: 9px;
-      display: inline-block;
-      text-decoration: none;
-      color: #d6f1d2;
-      font-weight: 700;
-      font-size: 0.86rem;
-    }
-
-    .empty {
-      color: var(--muted);
-      margin: 0;
-      font-size: 0.84rem;
     }
 
     .tabs {
@@ -181,8 +120,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.9) 36%, rgba(11, 40, 24, 0.98));
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.92) 30%, rgba(11, 40, 24, 0.98));
     }
 
     .tabs-inner {
@@ -194,10 +133,14 @@
     }
 
     .tab {
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
       padding: 10px 8px;
       border-radius: 12px;
-      font-size: 0.82rem;
+      font-size: 0.76rem;
       font-weight: 700;
       color: var(--muted);
       background: rgba(255, 255, 255, 0.07);
@@ -213,65 +156,55 @@
 </head>
 <body>
   <main class="screen">
-    <header class="top">
-      <a class="back" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
-      <div>
-        <h1 class="title">Education and Training</h1>
-        <p class="subtitle">Learning guides, downloadable packs, and quick references</p>
+    <header class="top-bar">
+      <a class="back-link" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
+      <div class="header-copy">
+        <h1>EDUCATION &amp; TRAINING</h1>
       </div>
     </header>
 
-    <section class="grid" aria-label="Category summary">
-      {% for category in grouped_categories %}
-        <article class="category">
-          <div class="icon" aria-hidden="true">
-            {% if category.icon == 'clipboard' %}📋{% elif category.icon == 'medical-bag' %}🧰{% elif category.icon == 'dna' %}🧬{% elif category.icon == 'play' %}🎬{% elif category.icon == 'poster' %}🖼️{% else %}📚{% endif %}
-          </div>
-          <h2>{{ category.label }}</h2>
-          <div class="total">{{ category.total }} resources</div>
-        </article>
-      {% endfor %}
-    </section>
+    <section class="modules" aria-label="Education modules">
+      <a class="module-card" href="#">
+        <span class="module-icon" aria-hidden="true">📖</span>
+        <p class="module-title">Snakebite Management Guidelines</p>
+      </a>
 
-    <section class="resources" aria-label="Material links by category">
-      {% for category in grouped_categories %}
-        <article class="resource-card">
-          <div class="resource-head">
-            <h3 class="resource-title">{{ category.label }}</h3>
-            <span class="badge gray">{{ category.total }}</span>
-          </div>
+      <a class="module-card" href="#">
+        <span class="module-icon" aria-hidden="true">🧰</span>
+        <p class="module-title">First Aid for Snakebite</p>
+      </a>
 
-          {% for item in category.materials %}
-            <div class="resource-meta">
-              <span class="badge gray">{{ item.title }}</span>
-              {% if item.is_downloadable %}
-                <span class="badge">Download</span>
-                {% if item.file_size_bytes %}
-                  <span class="badge">{{ item.file_size_bytes|filesizeformat }}</span>
-                {% endif %}
-                {% if item.offline_available %}
-                  <span class="badge">Offline Ready</span>
-                {% endif %}
-              {% else %}
-                <span class="badge gray">Online</span>
-              {% endif %}
-            </div>
-            {% if item.resource_url %}
-              <a class="link" href="{{ item.resource_url }}" target="_blank" rel="noopener">Open Resource</a>
-            {% endif %}
-          {% empty %}
-            <p class="empty">No materials available in this section yet.</p>
-          {% endfor %}
-        </article>
-      {% endfor %}
+      <a class="module-card" href="#">
+        <span class="module-icon" aria-hidden="true">🐍💲</span>
+        <p class="module-title">Snake Biology &amp; Prevention</p>
+      </a>
+
+      <a class="module-card" href="#">
+        <span class="module-icon" aria-hidden="true">▶️</span>
+        <p class="module-title">Training Videos &amp; Demonstrations</p>
+      </a>
+
+      <a class="module-card" href="#">
+        <span class="module-icon" aria-hidden="true">⬇️</span>
+        <p class="module-title">Posters &amp; Job Aids</p>
+      </a>
     </section>
   </main>
 
   <nav class="tabs" aria-label="Education tabs">
     <div class="tabs-inner">
-      <div class="tab active">Learn</div>
-      <div class="tab">Downloads</div>
-      <div class="tab">Bookmarks</div>
+      <div class="tab active">
+        <span aria-hidden="true">🎓</span>
+        <span>Learn</span>
+      </div>
+      <div class="tab">
+        <span aria-hidden="true">📥</span>
+        <span>Downloads</span>
+      </div>
+      <div class="tab">
+        <span aria-hidden="true">🔖</span>
+        <span>Bookmarks</span>
+      </div>
     </div>
   </nav>
 </body>

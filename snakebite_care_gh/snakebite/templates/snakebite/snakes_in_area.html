@@ -7,15 +7,15 @@
   <style>
     :root {
       --bg: #0f3822;
-      --panel: rgba(255, 255, 255, 0.07);
-      --panel-border: rgba(255, 255, 255, 0.13);
-      --text: #ffffff;
-      --muted: #b8c5bb;
+      --panel: rgba(255, 255, 255, 0.08);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fff6;
+      --muted: #cfe2d1;
       --accent: #9fe59a;
+      --accent-strong: #1e7a3e;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
       --hemo: #d94141;
       --neuro: #7a3dd8;
-      --cyto: #cc7a21;
     }
 
     * {
@@ -28,14 +28,14 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at top, rgba(159, 229, 154, 0.11), transparent 30%),
-        linear-gradient(180deg, #123d26 0%, var(--bg) 45%, #0b2818 100%);
+        radial-gradient(circle at top, rgba(159, 229, 154, 0.16), transparent 30%),
+        linear-gradient(180deg, #123d26 0%, var(--bg) 55%, #0b2818 100%);
     }
 
     body {
       display: flex;
       justify-content: center;
-      padding: 16px 14px 94px;
+      padding: 14px 14px 200px;
     }
 
     .screen {
@@ -43,127 +43,103 @@
       max-width: 460px;
     }
 
-    .top {
+    .top-bar {
       display: flex;
       align-items: center;
       gap: 12px;
+      padding: 12px 10px;
       margin-bottom: 12px;
+      border-radius: 16px;
+      background: rgba(9, 31, 20, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
-    .back {
-      width: 38px;
-      height: 38px;
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
       border-radius: 12px;
-      display: grid;
-      place-items: center;
-      color: var(--text);
       text-decoration: none;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      font-size: 20px;
-    }
-
-    .title {
-      margin: 0;
-      font-size: 1.06rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .subtitle {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .toolbar {
-      margin-bottom: 14px;
-      padding: 10px;
-      border-radius: 13px;
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-    }
-
-    .toolbar form {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-    }
-
-    .region-select,
-    .filter-btn {
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.16);
-      padding: 10px;
-      font-size: 0.9rem;
       color: var(--text);
-      background: rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 20px;
+      line-height: 1;
     }
 
-    .filter-btn {
+    .header-copy h1 {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.25;
+    }
+
+    .hero {
+      margin: 0 0 12px;
+      padding: 4px 2px 0;
+    }
+
+    .hero h2 {
+      margin: 0;
+      font-size: 1.1rem;
       font-weight: 700;
-      background: rgba(159,229,154,0.18);
-      border-color: rgba(159,229,154,0.38);
-      cursor: pointer;
+      line-height: 1.35;
+      color: var(--text);
     }
 
-    .cards {
+    .snake-list {
       display: grid;
       gap: 12px;
-      max-height: calc(100vh - 255px);
-      overflow-y: auto;
-      padding-right: 3px;
+      margin-bottom: 14px;
     }
 
-    .card {
-      display: grid;
-      grid-template-columns: 90px 1fr;
+    .snake-card {
+      display: flex;
+      align-items: center;
       gap: 12px;
       padding: 12px;
-      border-radius: 16px;
-      text-decoration: none;
-      color: inherit;
+      border-radius: 18px;
       background: var(--panel);
       border: 1px solid var(--panel-border);
       box-shadow: var(--shadow);
     }
 
-    .thumb {
-      width: 90px;
-      height: 90px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: rgba(255,255,255,0.09);
-      border: 1px solid rgba(255,255,255,0.13);
-      display: grid;
-      place-items: center;
-    }
-
-    .thumb img {
-      width: 100%;
-      height: 100%;
+    .snake-photo {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+      border-radius: 50%;
       object-fit: cover;
-      display: block;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.1);
     }
 
-    .thumb-fallback {
-      font-size: 30px;
+    .snake-info {
+      min-width: 0;
     }
 
-    .name {
-      margin: 0;
-      font-size: 1rem;
-      line-height: 1.2;
+    .snake-name {
+      margin: 0 0 2px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
     }
 
-    .scientific {
-      margin: 5px 0 9px;
-      color: #d8e4da;
+    .snake-scientific {
+      margin: 0 0 6px;
+      color: var(--muted);
       font-size: 0.9rem;
       font-style: italic;
     }
 
-    .badge {
+    .snake-tag {
       display: inline-flex;
       align-items: center;
       padding: 5px 9px;
@@ -172,104 +148,64 @@
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: #fff;
+      color: #ffffff;
     }
 
-    .badge.hemotoxic {
+    .snake-tag.hemotoxic {
       background: var(--hemo);
     }
 
-    .badge.neurotoxic {
+    .snake-tag.neurotoxic {
       background: var(--neuro);
     }
 
-    .badge.cytotoxic {
-      background: var(--cyto);
-    }
-
-    .region-pill {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-
-    .empty {
-      margin: 10px 0;
-      border-radius: 12px;
-      padding: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(2, 8, 5, 0.7);
+    .cta {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px 12px;
-    }
-
-    .modal-card {
       width: 100%;
-      max-width: 460px;
-      border-radius: 16px;
-      padding: 14px;
-      background: #153a27;
-      border: 1px solid rgba(255,255,255,0.15);
+      padding: 14px 16px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      background: linear-gradient(180deg, #1f7b3f, #134f2a);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       box-shadow: var(--shadow);
     }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .close {
-      color: var(--text);
-      text-decoration: none;
-      font-size: 0.9rem;
-      padding: 7px 10px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.14);
-    }
-
-    .modal-copy {
-      color: #dfe9e2;
-      font-size: 0.9rem;
-      line-height: 1.42;
-      margin: 10px 0 0;
-      white-space: pre-line;
-    }
-
-    .tabs {
+    .bottom-bar {
       position: fixed;
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.9) 36%, rgba(11, 40, 24, 0.98));
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.92) 30%, rgba(11, 40, 24, 0.98));
     }
 
-    .tabs-inner {
+    .bottom-inner {
       max-width: 460px;
       margin: 0 auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tabs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
 
     .tab {
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
       padding: 10px 8px;
       border-radius: 12px;
-      font-size: 0.82rem;
+      font-size: 0.76rem;
       font-weight: 700;
       color: var(--muted);
       background: rgba(255, 255, 255, 0.07);
@@ -279,81 +215,81 @@
     .tab.active {
       color: #0f3822;
       background: var(--accent);
-      border-color: rgba(159, 229, 154, 0.7);
+      border-color: rgba(159, 229, 154, 0.8);
     }
   </style>
 </head>
 <body>
   <main class="screen">
-    <header class="top">
-      <a class="back" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
-      <div>
-        <h1 class="title">Snakes in My Area</h1>
-        <p class="subtitle">Regional snake profiles and venom risk hints</p>
+    <header class="top-bar">
+      <a class="back-link" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
+      <div class="header-copy">
+        <h1>SNAKES IN MY AREA</h1>
       </div>
     </header>
 
-    <section class="toolbar" aria-label="Region filter">
-      <form method="get">
-        <select class="region-select" id="region_id" name="region_id">
-          {% for region in regions %}
-            <option value="{{ region.id }}" {% if active_region_id == region.id|stringformat:'s' %}selected{% endif %}>{{ region.name }}</option>
-          {% endfor %}
-        </select>
-        <button class="filter-btn" type="submit">Apply</button>
-      </form>
+    <section class="hero" aria-label="Snake section heading">
+      <h2>Common venomous snakes in your region</h2>
     </section>
 
-    <section class="cards" aria-label="Snake cards">
-      {% for snake in snakes %}
-        <a
-          class="card"
-          href="?region_id={{ active_region_id }}&snake_id={{ snake.id }}"
-          aria-label="Open profile for {{ snake.common_name }}"
-        >
-          <div class="thumb">
-            {% if snake.image %}
-              <img src="{{ snake.image.url }}" alt="{{ snake.common_name }} image">
-            {% else %}
-              <span class="thumb-fallback" aria-hidden="true">🐍</span>
-            {% endif %}
-          </div>
-          <div>
-            <p class="name">{{ snake.common_name }}</p>
-            <p class="scientific">{{ snake.scientific_name }}</p>
-            <span class="badge {{ snake.venom_type }}">{{ snake.get_venom_type_display }}</span>
-            <div class="region-pill">{{ active_region.name|default:'All Regions' }}</div>
-          </div>
-        </a>
-      {% empty %}
-        <p class="empty">No snake profiles found for this region.</p>
-      {% endfor %}
+    <section class="snake-list" aria-label="Snake cards">
+      <article class="snake-card">
+        <img class="snake-photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='80' fill='%23e7f4de'/%3E%3Cpath d='M44 92c13-27 34-41 61-41 18 0 33 8 41 20-14 7-25 18-33 31-8 13-14 27-20 41-13-3-27-9-41-18-10-6-17-13-24-20 6-6 11-8 16-13z' fill='%237a3dd8'/%3E%3Cpath d='M70 70c14 4 24 12 35 23' stroke='%230f3822' stroke-width='9' stroke-linecap='round'/%3E%3Cpath d='M62 58c7-13 17-20 31-20' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" alt="Puff Adder thumbnail">
+        <div class="snake-info">
+          <p class="snake-name">Puff Adder</p>
+          <p class="snake-scientific">(Bitis arietans)</p>
+          <span class="snake-tag hemotoxic">Hemotoxic</span>
+        </div>
+      </article>
+
+      <article class="snake-card">
+        <img class="snake-photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='80' fill='%23f6e7d7'/%3E%3Cpath d='M45 101c15-19 28-31 48-37 20-6 34 3 46 12-15 9-29 20-39 36-13 20-23 26-38 26-10 0-18-5-25-13 7-8 12-14 8-24z' fill='%23d94141'/%3E%3Cpath d='M62 64c11 9 20 12 32 12' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3Cpath d='M67 49c10-8 23-8 34-1' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" alt="Saw-scaled Viper thumbnail">
+        <div class="snake-info">
+          <p class="snake-name">Saw-scaled Viper</p>
+          <p class="snake-scientific">(Echis ocellatus)</p>
+          <span class="snake-tag hemotoxic">Hemotoxic</span>
+        </div>
+      </article>
+
+      <article class="snake-card">
+        <img class="snake-photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='80' fill='%23e9f5e9'/%3E%3Cpath d='M48 100c15-24 30-37 50-40 20-3 39 5 51 22-12 8-24 18-37 34-12 15-29 24-50 23-8 0-16-2-24-7 5-10 7-17 10-32z' fill='%237a3dd8'/%3E%3Cpath d='M78 61c12-7 24-9 39-5' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3Cpath d='M61 74c16 3 29 11 40 22' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" alt="Black-necked Spitting Cobra thumbnail">
+        <div class="snake-info">
+          <p class="snake-name">Black-necked Spitting Cobra</p>
+          <p class="snake-scientific">(Naja nigricollis)</p>
+          <span class="snake-tag neurotoxic">Neurotoxic</span>
+        </div>
+      </article>
+
+      <article class="snake-card">
+        <img class="snake-photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='80' fill='%23edf7e7'/%3E%3Cpath d='M46 98c15-20 30-34 51-36 22-2 39 9 49 24-13 7-25 15-38 33-14 20-29 29-46 28-8 0-16-4-23-11 4-11 5-22 7-38z' fill='%237a3dd8'/%3E%3Cpath d='M75 68c15-8 25-9 38-3' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3Cpath d='M63 82c13 6 22 13 29 26' stroke='%230f3822' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" alt="Green Mamba thumbnail">
+        <div class="snake-info">
+          <p class="snake-name">Green Mamba</p>
+          <p class="snake-scientific">(Dendroaspis viridis)</p>
+          <span class="snake-tag neurotoxic">Neurotoxic</span>
+        </div>
+      </article>
     </section>
+
+    <a class="cta" href="#">VIEW ALL SNAKES</a>
   </main>
 
-  {% if selected_snake %}
-    <aside class="modal" aria-label="Snake profile details">
-      <section class="modal-card">
-        <div class="modal-header">
-          <div>
-            <p class="name">{{ selected_snake.common_name }}</p>
-            <p class="scientific">{{ selected_snake.scientific_name }}</p>
-          </div>
-          <a class="close" href="?region_id={{ active_region_id }}">Close</a>
+  <div class="bottom-bar">
+    <div class="bottom-inner">
+      <nav class="tabs" aria-label="Snakes page tabs">
+        <div class="tab active">
+          <span aria-hidden="true">🐍</span>
+          <span>Snakes</span>
         </div>
-        <span class="badge {{ selected_snake.venom_type }}">{{ selected_snake.get_venom_type_display }}</span>
-        <p class="modal-copy">{{ selected_snake.description|default:'No detailed description added yet.' }}</p>
-        <p class="modal-copy"><strong>Visual Features:</strong> {{ selected_snake.visual_features|default:'No visual feature guide added yet.' }}</p>
-      </section>
-    </aside>
-  {% endif %}
-
-  <nav class="tabs" aria-label="Snakes page tabs">
-    <div class="tabs-inner">
-      <div class="tab active">Snakes</div>
-      <div class="tab">Map</div>
-      <div class="tab">Search</div>
+        <div class="tab">
+          <span aria-hidden="true">📍</span>
+          <span>Map</span>
+        </div>
+        <div class="tab">
+          <span aria-hidden="true">🔎</span>
+          <span>Search</span>
+        </div>
+      </nav>
     </div>
-  </nav>
+  </div>
 </body>
 </html>
