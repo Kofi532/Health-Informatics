@@ -7,11 +7,11 @@ from .views import (
 
 
 _FLAG_ASSET_MAP = {
-	'ghana': 'snakebite/flags/ghana.png',
-	'malawi': 'snakebite/flags/malawi.png',
-	'kenya': 'snakebite/flags/kenya.png',
-	'nigeria': 'snakebite/flags/nigeria.png',
-	'zambia': 'snakebite/flags/zambia.png',
+	'ghana': '/static/snakebite/flags/ghana.png',
+	'malawi': '/static/snakebite/flags/malawi.png',
+	'kenya': '/static/snakebite/flags/kenya.png',
+	'nigeria': '/static/snakebite/flags/nigeria.png',
+	'zambia': '/static/snakebite/flags/zambia.png',
 }
 
 
