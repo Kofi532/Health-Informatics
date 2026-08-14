@@ -107,6 +107,49 @@
       align-items: center;
     }
 
+    .field-group {
+      margin: 14px 0;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(13, 124, 102, 0.15);
+    }
+
+    .member-options {
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .member-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .member-option input {
+      margin: 0;
+    }
+
     button {
       border: 0;
       border-radius: 10px;
@@ -137,40 +180,91 @@
 <body>
   <main class="card" aria-label="Snakebite access form">
     <h1>VenomGuard AI Access</h1>
-    <p>Enter the password to continue to the VenomGuard AI application.</p>
+    <p>
+      {% if show_profile_form %}
+        Password confirmed. Choose your profile details to continue.
+      {% else %}
+        Enter the password to continue to the VenomGuard AI application.
+      {% endif %}
+    </p>
 
     {% if error_message %}
       <div class="error" role="alert">{{ error_message }}</div>
     {% endif %}
 
-    <form method="post" novalidate>
-      {% csrf_token %}
-      <input type="hidden" name="next" value="{{ next_url }}">
+    {% if show_profile_form %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <input type="hidden" name="action" value="profile">
 
-      <label for="password">Password</label>
-      <div class="password-wrap">
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-      </div>
+        <div class="field-group">
+          <label for="nationality">Nationality</label>
+          <select id="nationality" name="nationality" required>
+            <option value="">Select your nationality</option>
+            {% for code, label in nationality_options %}
+              <option value="{{ code }}" {% if selected_nationality == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-      <label class="toggle" for="show-password">
-        <input id="show-password" type="checkbox">
-        Show password
-      </label>
+        <div class="field-group">
+          <label>Member type</label>
+          <div class="member-options" role="radiogroup" aria-label="Member type">
+            {% for code, label in member_type_options %}
+              <label class="member-option" for="member-{{ code }}">
+                <input
+                  id="member-{{ code }}"
+                  type="radio"
+                  name="member_type"
+                  value="{{ code }}"
+                  {% if selected_member_type == code %}checked{% endif %}
+                  required
+                >
+                <span>{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
 
-      <div class="actions">
-        <button type="submit">Continue</button>
-        <a class="back" href="/">Back to project selector</a>
-      </div>
-    </form>
+        <div class="actions">
+          <button type="submit">Continue to VenomGuard</button>
+          <a class="back" href="/">Back to project selector</a>
+        </div>
+      </form>
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <input type="hidden" name="action" value="password">
+
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+
+        <label class="toggle" for="show-password">
+          <input id="show-password" type="checkbox">
+          Show password
+        </label>
+
+        <div class="actions">
+          <button type="submit">Continue</button>
+          <a class="back" href="/">Back to project selector</a>
+        </div>
+      </form>
+    {% endif %}
   </main>
 
   <script>
     const passwordInput = document.getElementById('password');
     const toggle = document.getElementById('show-password');
 
-    toggle.addEventListener('change', function () {
-      passwordInput.type = this.checked ? 'text' : 'password';
-    });
+    if (passwordInput && toggle) {
+      toggle.addEventListener('change', function () {
+        passwordInput.type = this.checked ? 'text' : 'password';
+      });
+    }
   </script>
 </body>
 </html>

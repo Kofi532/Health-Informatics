@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antivenom Stock Map | VenomGuard AI</title>
+  <title>Nearest Help | VenomGuard AI</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -17,23 +17,20 @@
       --panel-border: rgba(255, 255, 255, 0.12);
       --text: #f8fff6;
       --muted: #cfe2d1;
-      --accent: #9fe59a;
-      --ok-text: #81f0b1;
+      --primary: #9fe59a;
+      --primary-deep: #1e7a3e;
+      --warning: #f0ba58;
+      --danger: #e75d5d;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     html, body {
       margin: 0;
       min-height: 100%;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(circle at top, rgba(159, 229, 154, 0.16), transparent 30%),
-        linear-gradient(180deg, #123d26 0%, var(--bg) 55%, #0b2818 100%);
+      background: radial-gradient(circle at top, rgba(159, 229, 154, 0.16), transparent 30%), linear-gradient(180deg, #123d26 0%, var(--bg) 55%, #0b2818 100%);
     }
 
     body {
@@ -76,7 +73,7 @@
 
     .header-copy h1 {
       margin: 0;
-      font-size: 0.98rem;
+      font-size: 0.96rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -94,30 +91,23 @@
       min-height: 320px;
     }
 
-    #antivenom-map {
+    #nearest-help-map {
       width: 100%;
       height: 100%;
     }
 
-    .drawer {
-      display: grid;
-      gap: 10px;
-      max-height: clamp(180px, 33vh, 320px);
-      overflow-y: auto;
-      padding-right: 2px;
-    }
-
     .facility-card {
-      border-radius: 14px;
-      padding: 12px;
       background: var(--panel);
       border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 12px;
       box-shadow: var(--shadow);
+      margin-bottom: 16px;
     }
 
     .facility-name {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 800;
       line-height: 1.3;
       text-transform: uppercase;
@@ -134,7 +124,7 @@
       margin: 5px 0 0;
       font-size: 0.86rem;
       font-weight: 700;
-      color: var(--ok-text);
+      color: #81f0b1;
     }
 
     .green-pin {
@@ -158,42 +148,61 @@
       left: 4px;
     }
 
-    .tabs {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, transparent, rgba(11, 40, 24, 0.92) 30%, rgba(11, 40, 24, 0.98));
+    .gold-pin {
+      width: 20px;
+      height: 20px;
+      border-radius: 50% 50% 50% 0;
+      background: #d9a228;
+      transform: rotate(-45deg);
+      border: 2px solid #f6e7b3;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
     }
 
-    .tabs-inner {
-      max-width: 460px;
-      margin: 0 auto;
+    .gold-pin::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff8dd;
+      position: absolute;
+      top: 4px;
+      left: 4px;
+    }
+
+    .actions {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 10px;
+      margin-top: 20px;
     }
 
-    .tab {
-      display: flex;
-      flex-direction: column;
+    .btn {
+      width: 100%;
+      border: none;
+      min-height: 52px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.96rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      padding: 10px 8px;
-      border-radius: 12px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: var(--muted);
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.13);
     }
 
-    .tab.active {
-      color: #0f3822;
-      background: var(--accent);
-      border-color: rgba(159, 229, 154, 0.7);
+    .btn-primary {
+      background: var(--primary);
+      color: #102c1d;
+    }
+
+    .btn-light {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .btn-emergency {
+      background: var(--danger);
+      color: white;
     }
 
     .leaflet-popup-content-wrapper,
@@ -207,56 +216,31 @@
 <body>
   <main class="screen">
     <header class="top-bar">
-      <a class="back-link" href="{% url 'snakebite:home' %}" aria-label="Back to home">&larr;</a>
+      <a class="back-link" href="{% url 'snakebite:community_home' %}" aria-label="Back to home">&larr;</a>
       <div class="header-copy">
-        <h1>ANTIVENOM STOCK MAP</h1>
+        <h1>Nearest Help</h1>
       </div>
     </header>
 
-    {% include 'snakebite/_profile_nav.html' %}
-
-    <section class="map-wrap" aria-label="Interactive facility map">
-      <div id="antivenom-map"></div>
+    <section class="map-wrap" aria-label="Interactive nearest help map">
+      <div id="nearest-help-map"></div>
     </section>
 
-    <section class="drawer" aria-label="Nearby facilities list">
-      <article class="facility-card">
-        <h2 class="facility-name">DISTRICT HOSPITAL</h2>
-        <p class="facility-line">Donkorkrom</p>
-        <p class="status-ok">Antivenom available</p>
-        <p class="facility-line">Cost: GHS 300</p>
-      </article>
-
-      <article class="facility-card">
-        <h2 class="facility-name">TEASE HEALTH CENTER</h2>
-        <p class="facility-line">Code: GHS 160 | Antivenom available | Cost: GHS 160</p>
-      </article>
-
-      <article class="facility-card">
-        <h2 class="facility-name">AMANKWAKROM CHPS</h2>
-        <p class="facility-line">Antivenom available | Cost: GHS 160</p>
-      </article>
+    <section class="facility-card">
+      <h2 class="facility-name">Beposo Health Centre</h2>
+      <p class="facility-line">8.6 km away · 15 min by road</p>
+      <p class="status-ok">Anti-venom available</p>
+      <p class="facility-line">Open 24/7 · In case of emergency, call 112</p>
     </section>
-  </main>
 
-  {{ facilities_payload|json_script:"facilities-json" }}
-
-  <nav class="tabs" aria-label="Antivenom tabs">
-    <div class="tabs-inner">
-      <div class="tab active">
-        <span aria-hidden="true">&#128205;</span>
-        <span>Map</span>
-      </div>
-      <div class="tab">
-        <span aria-hidden="true">&#128202;</span>
-        <span>List</span>
-      </div>
-      <div class="tab">
-        <span aria-hidden="true">&#9432;</span>
-        <span>Info</span>
-      </div>
+    <div class="actions">
+      <a href="" class="btn btn-primary">Get Directions</a>
+      <a href="tel:+233000000000" class="btn btn-light">Call for Transport Help</a>
+      <a href="tel:112" class="btn btn-emergency">Emergency? Call 112</a>
     </div>
-  </nav>
+
+    {% include 'snakebite/_community_bottom_nav.html' %}
+  </main>
 
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -265,10 +249,7 @@
   ></script>
   <script>
     (function () {
-      var payloadElement = document.getElementById('facilities-json');
-      var facilities = payloadElement ? JSON.parse(payloadElement.textContent) : [];
-
-      var map = L.map('antivenom-map', {
+      var map = L.map('nearest-help-map', {
         zoomControl: true,
         scrollWheelZoom: true
       });
@@ -278,38 +259,43 @@
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      var validFacilities = facilities.filter(function (facility) {
-        return facility.latitude !== null && facility.longitude !== null;
-      });
-
-      if (validFacilities.length === 0) {
-        map.setView([7.9465, -1.0232], 6);
-        return;
-      }
+      var facilityCoords = [
+        { name: 'Beposo Health Centre', lat: 7.9600, lng: -1.0400, color: 'green' },
+        { name: 'Regional Referral Unit', lat: 7.9900, lng: -1.0800, color: 'gold' }
+      ];
 
       var bounds = [];
-      validFacilities.forEach(function (facility) {
-        var greenMarker = L.divIcon({
-          className: 'green-pin',
+
+      facilityCoords.forEach(function (facility) {
+        var icon = L.divIcon({
+          className: facility.color === 'green' ? 'green-pin' : 'gold-pin',
           iconSize: [20, 20],
           iconAnchor: [10, 20],
           popupAnchor: [0, -20]
         });
 
-        var marker = L.marker([facility.latitude, facility.longitude], { icon: greenMarker }).addTo(map);
-        var priceText = facility.antivenom_cost !== null ? 'GHS ' + facility.antivenom_cost : 'Not listed';
-        var phoneText = facility.contact_number || 'No contact number';
+        var marker = L.marker([facility.lat, facility.lng], { icon: icon }).addTo(map);
         marker.bindPopup(
           '<strong>' + facility.name + '</strong><br>' +
-          facility.facility_type + ' · ' + facility.region + '<br>' +
-          'Stock: Available<br>' +
-          'Price: ' + priceText + '<br>' +
-          'Phone: ' + phoneText
+          'Open 24/7<br>' +
+          'Anti-venom available'
         );
-        bounds.push([facility.latitude, facility.longitude]);
+        bounds.push([facility.lat, facility.lng]);
       });
 
-      map.fitBounds(bounds, { padding: [26, 26] });
+      var userLatLng = [7.9300, -1.0100];
+      var userMarker = L.marker(userLatLng, {
+        icon: L.divIcon({
+          className: 'green-pin',
+          iconSize: [20, 20],
+          iconAnchor: [10, 20],
+          popupAnchor: [0, -20]
+        })
+      }).addTo(map);
+      userMarker.bindPopup('<strong>You are here</strong>');
+
+      bounds.push(userLatLng);
+      map.fitBounds(bounds, { padding: [30, 30] });
     })();
   </script>
 </body>

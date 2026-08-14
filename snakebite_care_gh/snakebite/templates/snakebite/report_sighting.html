@@ -1,0 +1,167 @@
+{% extends 'snakebite/base.html' %}
+{% block title %}Report Sighting{% endblock %}
+{% block extra_head %}
+<script>
+    function updateSelectedPhoto(input) {
+        var preview = document.getElementById('photo-preview');
+        var nameEl = document.getElementById('photo-name');
+        var file = input && input.files && input.files[0];
+
+        if (!file) {
+            if (preview) {
+                preview.src = '';
+                preview.style.display = 'none';
+            }
+            if (nameEl) {
+                nameEl.textContent = 'No image selected';
+            }
+            return;
+        }
+
+        if (preview && file.type && file.type.startsWith('image/')) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+        }
+
+        if (nameEl) {
+            nameEl.textContent = file.name;
+        }
+    }
+
+    function triggerReportPhoto(mode) {
+        var input = document.getElementById(mode === 'environment' ? 'report-photo-camera-input' : 'report-photo-gallery-input');
+        if (!input) return;
+
+        input.value = '';
+        input.click();
+    }
+
+    function bindChipSelection(groupName) {
+        var radios = document.querySelectorAll('input[type="radio"][name="' + groupName + '"]');
+        if (!radios.length) return;
+
+        radios.forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                var group = radio.closest('.chip-row');
+                if (!group) return;
+
+                group.querySelectorAll('.chip').forEach(function (chip) {
+                    chip.classList.remove('active');
+                });
+
+                var selectedChip = radio.closest('.chip');
+                if (selectedChip) {
+                    selectedChip.classList.add('active');
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        ['report-photo-camera-input', 'report-photo-gallery-input'].forEach(function (id) {
+            var input = document.getElementById(id);
+            if (!input) return;
+            input.addEventListener('change', function () {
+                updateSelectedPhoto(input);
+            });
+        });
+
+        bindChipSelection('was_bitten');
+        bindChipSelection('time_seen');
+    });
+
+    window.addEventListener('pageshow', function () {
+        ['report-photo-camera-input', 'report-photo-gallery-input'].forEach(function (id) {
+            var input = document.getElementById(id);
+            if (input) {
+                input.value = '';
+                updateSelectedPhoto(input);
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% block content %}
+    <div class="section" style="padding: 16px;">
+        <div class="section-header">
+            <h2 class="section-title">Report a snake sighting</h2>
+        </div>
+
+        {% if form_errors %}
+            {% for error in form_errors %}
+                <div class="alert-box">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="card" style="margin-bottom: 14px;">
+                <div style="display:flex; gap:10px; margin-bottom: 12px;">
+                    <button type="button" class="secondary-btn" style="flex:1;" onclick="triggerReportPhoto('environment')">Take Photo</button>
+                    <button type="button" class="secondary-btn" style="flex:1;" onclick="triggerReportPhoto('gallery')">Gallery</button>
+                </div>
+                <input id="report-photo-camera-input" type="file" name="photo" accept="image/*" capture="environment" class="field" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; margin:0; padding:0;">
+                <input id="report-photo-gallery-input" type="file" name="photo" accept="image/*" class="field" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; margin:0; padding:0;">
+
+                <div id="photo-selection" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px; border: 1px dashed #d1d5db; border-radius: 10px; padding: 10px; background: #f8fafc;">
+                    <img id="photo-preview" alt="Selected photo preview" style="display:none; max-width: 100%; max-height: 180px; border-radius: 10px; object-fit: cover; background: #e2e8f0;" />
+                    <div id="photo-name" class="muted" style="font-size: 13px; color: #475569;">No image selected</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <label class="muted" for="suspected_species">Suspected species</label>
+                <select id="suspected_species" name="suspected_species" class="field">
+                    <option value="">Select a species</option>
+                    {% for species in species %}
+                        <option value="{{ species.id }}">{{ species.common_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <label class="muted" for="headline">Headline</label>
+                <input id="headline" name="headline" type="text" class="field" maxlength="255" placeholder="e.g. Snake seen near the road drain">
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <label class="muted" for="description">Description</label>
+                <textarea id="description" name="description" class="field" maxlength="200" placeholder="Describe what you saw, the location and behavior."></textarea>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <div class="section-header" style="margin-bottom: 0;">
+                    <span class="muted">Was anyone bitten?</span>
+                </div>
+                <div class="chip-row">
+                    <label class="chip active"><input type="radio" name="was_bitten" value="no" checked style="display:none;">No</label>
+                    <label class="chip"><input type="radio" name="was_bitten" value="yes" style="display:none;">Yes</label>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <label class="muted" for="contact_number">WhatsApp / phone</label>
+                <input id="contact_number" name="contact_number" type="text" class="field" placeholder="Optional contact number">
+            </div>
+
+            <div class="card" style="margin-bottom: 18px;">
+                <div class="section-header" style="margin-bottom: 0;">
+                    <span class="muted">Time seen</span>
+                </div>
+                <div class="chip-row">
+                    {% for value, label in time_options %}
+                        <label class="chip {% if forloop.first %}active{% endif %}">
+                            <input type="radio" name="time_seen" value="{{ value }}" {% if forloop.first %}checked{% endif %} style="display:none;">
+                            {{ label }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="primary-btn" style="flex:1;">Submit report</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

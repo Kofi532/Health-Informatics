@@ -11,6 +11,8 @@ from snakebite.models import (
     FirstAidStep,
     HealthFacility,
     PatientAssessment,
+    PatientCase,
+    Referral,
     Region,
     Snake,
     Symptom,
@@ -28,6 +30,18 @@ class Command(BaseCommand):
             help="Number of patient assessments to generate (default: 30).",
         )
         parser.add_argument(
+            "--cases",
+            type=int,
+            default=25,
+            help="Number of CHW patient cases to generate (default: 25).",
+        )
+        parser.add_argument(
+            "--referrals",
+            type=int,
+            default=12,
+            help="Number of referral records to generate (default: 12).",
+        )
+        parser.add_argument(
             "--seed",
             type=int,
             default=42,
@@ -38,6 +52,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         rng = random.Random(options["seed"])
         assessments_to_create = max(0, options["assessments"])
+        cases_to_create = max(0, options["cases"])
+        referrals_to_create = max(0, options["referrals"])
 
         regions = self._seed_regions()
         snakes = self._seed_snakes(regions)
@@ -53,6 +69,8 @@ class Command(BaseCommand):
             assessments_to_create,
             rng,
         )
+        case_records = self._seed_patient_cases(cases_to_create, facilities, rng)
+        referrals = self._seed_referrals(referrals_to_create, case_records, facilities, rng)
 
         self.stdout.write(self.style.SUCCESS("Snakebite demo data seeded successfully."))
         self.stdout.write(f"Regions: {len(regions)}")
@@ -63,6 +81,8 @@ class Command(BaseCommand):
         self.stdout.write(f"First-aid steps: {len(first_aid_steps)}")
         self.stdout.write(f"Educational materials: {len(materials)}")
         self.stdout.write(f"Patient assessments created: {assessments}")
+        self.stdout.write(f"CHW patient cases created: {len(case_records)}")
+        self.stdout.write(f"Referrals created: {len(referrals)}")
 
     def _seed_regions(self):
         region_payloads = [
@@ -396,5 +416,83 @@ class Command(BaseCommand):
                 picked = rng.sample(symptoms, count)
                 assessment.symptoms_present.set(picked)
             created += 1
+
+        return created
+
+    def _seed_patient_cases(self, total, facilities, rng):
+        first_names = [
+            "Amina", "Kofi", "Grace", "Kojo", "Ruth", "Yaw", "Mariam", "Emmanuel",
+            "Abena", "Benjamin", "Linda", "Isaac", "Adwoa", "Joseph", "Esi",
+        ]
+        last_names = [
+            "Boateng", "Mensah", "Owusu", "Nkrumah", "Asare", "Addo", "Frimpong",
+            "Bediako", "Adu", "Darko", "Gyamfi", "Sarpong",
+        ]
+        locations = [
+            "Accra", "Kumasi", "Tamale", "Wa", "Sekondi", "Cape Coast", "Ho",
+            "Koforidua", "Sunyani", "Bolgatanga",
+        ]
+        symptoms = [
+            "Severe pain\nSwelling\nBleeding",
+            "Painful swelling\nNausea",
+            "Breathing difficulty\nDizziness\nVomiting",
+            "Localized swelling\nTenderness",
+            "Bleeding gums\nWeakness",
+        ]
+        statuses = [
+            PatientCase.Status.OPEN,
+            PatientCase.Status.OPEN,
+            PatientCase.Status.IN_TRANSIT,
+            PatientCase.Status.RESOLVED,
+        ]
+        risk_levels = [
+            PatientCase.RiskLevel.LOW,
+            PatientCase.RiskLevel.MEDIUM,
+            PatientCase.RiskLevel.HIGH,
+        ]
+
+        created_cases = []
+        for index in range(total):
+            first = rng.choice(first_names)
+            last = rng.choice(last_names)
+            facility = rng.choice(facilities) if facilities else None
+            patient = PatientCase.objects.create(
+                patient_name=f"{first} {last}",
+                patient_age=rng.randint(5, 60),
+                gender=rng.choice([PatientCase.Gender.FEMALE, PatientCase.Gender.MALE, PatientCase.Gender.OTHER]),
+                location=rng.choice(locations),
+                symptoms=rng.choice(symptoms),
+                suspected_snake_type=rng.choice(["Viper (Likely)", "Cobra (Likely)", "Unknown snake"]),
+                risk_level=rng.choice(risk_levels),
+                status=rng.choice(statuses),
+                clinical_notes=(
+                    "Patient is stable and monitored with urgency. "
+                    "Arrange referral if symptoms worsen."
+                    if facility else "Patient monitored at community level."
+                ),
+                assigned_to=facility.name if facility else "Community CHW Team",
+            )
+            created_cases.append(patient)
+
+        return created_cases
+
+    def _seed_referrals(self, total, case_records, facilities, rng):
+        if not case_records:
+            return []
+
+        created = []
+        for _ in range(min(total, len(case_records))):
+            case = rng.choice(case_records)
+            facility = rng.choice(facilities) if facilities else None
+            referral = Referral.objects.create(
+                case=case,
+                destination_facility=facility,
+                notes="Urgent transfer for antivenom and continued observation.",
+                shared_patient_details=True,
+                status=rng.choice([Referral.Status.PENDING, Referral.Status.SENT, Referral.Status.ACKNOWLEDGED]),
+            )
+            case.status = PatientCase.Status.IN_TRANSIT
+            case.save(update_fields=['status'])
+            created.append(referral)
 
         return created

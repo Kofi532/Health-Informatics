@@ -1,0 +1,66 @@
+{% with current_name=request.resolver_match.url_name %}
+<nav class="snakebite-mobile-nav" aria-label="Primary navigation">
+  <a href="{% url 'snakebite:community_home' %}" class="nav-item {% if current_name == 'community_home' or current_name == 'community_bite_assessment' or current_name == 'community_risk_result' or current_name == 'community_nearest_help' or current_name == 'chw_dashboard' or current_name == 'chw_home' or current_name == 'case_details' or current_name == 'send_referral' %}active{% endif %}">
+    <span class="nav-icon">🕒</span>
+    <span>Timeline</span>
+  </a>
+  <a href="{% url 'snakebite:community_nearest_help' %}" class="nav-item {% if current_name == 'community_nearest_help' or current_name == 'antivenom_map' or current_name == 'map' %}active{% endif %}">
+    <span class="nav-icon">📍</span>
+    <span>Map</span>
+  </a>
+  <a href="{% url 'snakebite:report_sighting' %}" class="nav-item {% if current_name == 'report_sighting' or current_name == 'report' %}active{% endif %}">
+    <span class="nav-icon">⚠️</span>
+    <span>Report</span>
+  </a>
+  <a href="{% url 'snakebite:settings' %}" class="nav-item {% if current_name == 'settings' %}active{% endif %}">
+    <span class="nav-icon">⚙️</span>
+    <span>Settings</span>
+  </a>
+</nav>
+
+<style>
+  .snakebite-mobile-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    background: rgba(11, 14, 20, 0.96);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.25);
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(12px);
+  }
+
+  .snakebite-mobile-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+    color: #9aa3af;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 7px 6px 6px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  .snakebite-mobile-nav .nav-item.active {
+    color: #f5a623;
+    background: rgba(245, 166, 35, 0.08);
+    border-color: rgba(245, 166, 35, 0.44);
+    box-shadow: 0 0 0 1px rgba(245,166,35,0.12), 0 8px 18px rgba(245,166,35,0.12);
+  }
+
+  .snakebite-mobile-nav .nav-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+</style>
+{% endwith %}

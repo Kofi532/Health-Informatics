@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VenomGuard AI | Community</title>
+  <style>
+    :root {
+      --bg: #f5f7f3;
+      --panel: #ffffff;
+      --text: #17332d;
+      --muted: #526d65;
+      --primary: #0f7a65;
+      --primary-dark: #0a5f4d;
+      --accent: #dfeee7;
+      --warning: #d12e2e;
+      --border: #dfe7e1;
+      --shadow: 0 12px 30px rgba(16, 50, 41, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .screen {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--bg);
+      position: relative;
+      padding: 18px 16px 90px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #0f7a65, #1d9c74);
+      box-shadow: var(--shadow);
+      color: white;
+      font-size: 22px;
+    }
+
+    .brand-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .banner {
+      height: 188px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(177, 210, 197, 0.65), rgba(22, 103, 86, 0.82)),
+        url('https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;
+      display: flex;
+      align-items: flex-end;
+      padding: 18px;
+      color: white;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .banner-text {
+      font-size: 1.05rem;
+      line-height: 1.4;
+      font-weight: 700;
+      max-width: 260px;
+    }
+
+    .cta-primary,
+    .cta-secondary {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 54px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .cta-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 10px 18px rgba(15, 122, 101, 0.25);
+    }
+
+    .cta-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .language-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 4px 12px rgba(10, 38, 31, 0.03);
+    }
+
+    .language-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 44px;
+      padding: 8px 12px;
+      font-size: 0.96rem;
+      background: #f7faf8;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <header class="topbar" aria-label="VenomGuard AI header">
+      <div class="brand-mark" aria-hidden="true">🛡️</div>
+      <h1 class="brand-title">VenomGuard AI</h1>
+    </header>
+
+    <section class="banner" aria-label="Welcome banner">
+      <div class="banner-text">Hello! If someone is bitten by a snake, we can help.</div>
+    </section>
+
+    <a href="{% url 'snakebite:community_bite_assessment' %}" class="cta-primary">Start Bite Assessment</a>
+
+    <div class="actions-row">
+      <a href="{% url 'snakebite:community_bite_assessment' %}" class="cta-secondary">First Aid Guide</a>
+      <a href="{% url 'snakebite:community_nearest_help' %}" class="cta-secondary">Find Nearest Help</a>
+    </div>
+
+    <div class="language-box">
+      <label class="language-label" for="language-select">Language</label>
+      <select id="language-select" name="language">
+        <option>English (Ghana)</option>
+        <option>Twi</option>
+        <option>Chichewa</option>
+        <option>Hausa</option>
+        <option>Bemba</option>
+      </select>
+    </div>
+
+    {% include 'snakebite/_community_bottom_nav.html' %}
+  </main>
+</body>
+</html>

@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.utils import timezone
 from django.utils.text import slugify
 
 
@@ -244,3 +245,125 @@ class EducationalMaterial(models.Model):
 
 	def __str__(self):
 		return self.title
+
+
+class PatientCase(models.Model):
+	class RiskLevel(models.TextChoices):
+		LOW = "low", "Low"
+		MEDIUM = "medium", "Medium"
+		HIGH = "high", "High"
+
+	class Status(models.TextChoices):
+		OPEN = "open", "Open"
+		IN_TRANSIT = "in_transit", "In Transit"
+		RESOLVED = "resolved", "Resolved"
+
+	class Gender(models.TextChoices):
+		FEMALE = "female", "Female"
+		MALE = "male", "Male"
+		OTHER = "other", "Other"
+
+	case_id = models.CharField(max_length=30, unique=True, blank=True)
+	patient_name = models.CharField(max_length=150)
+	patient_age = models.PositiveIntegerField(default=18)
+	gender = models.CharField(max_length=20, choices=Gender.choices, default=Gender.FEMALE)
+	location = models.CharField(max_length=150)
+	symptoms = models.TextField(blank=True)
+	suspected_snake_type = models.CharField(max_length=80, default="Viper (Likely)")
+	risk_level = models.CharField(max_length=20, choices=RiskLevel.choices, default=RiskLevel.HIGH)
+	status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+	clinical_notes = models.TextField(blank=True)
+	photo = models.ImageField(upload_to="cases/", blank=True, null=True)
+	assigned_to = models.CharField(max_length=120, blank=True)
+	is_active = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ["-created_at"]
+		indexes = [
+			models.Index(fields=["case_id"]),
+			models.Index(fields=["risk_level"]),
+			models.Index(fields=["status"]),
+			models.Index(fields=["created_at"]),
+		]
+
+	def save(self, *args, **kwargs):
+		if not self.case_id:
+			year = timezone.now().year
+			last_case = PatientCase.objects.filter(case_id__icontains=f"VG-{year}-").order_by("-id").first()
+			next_number = 1
+			if last_case and last_case.case_id:
+				try:
+					next_number = int(last_case.case_id.rsplit('-', 1)[-1]) + 1
+				except ValueError:
+					next_number = 1
+			self.case_id = f"VG-{year}-{next_number:05d}"
+		super().save(*args, **kwargs)
+
+	def __str__(self):
+		return f"{self.case_id} - {self.patient_name}"
+
+
+class SnakeSighting(models.Model):
+	class TimeSeenChoices(models.TextChoices):
+		JUST_NOW = "just_now", "Just now"
+		EARLIER_TODAY = "earlier_today", "Earlier today"
+		PAST_WEEK = "past_week", "Past week"
+
+	photo = models.ImageField(upload_to="sightings/", blank=True, null=True)
+	headline = models.CharField(max_length=255)
+	description = models.TextField(max_length=200)
+	was_bitten = models.BooleanField(default=False)
+	contact_number = models.CharField(max_length=20, blank=True, null=True)
+	time_seen = models.CharField(max_length=50, choices=TimeSeenChoices.choices, default=TimeSeenChoices.JUST_NOW)
+	latitude = models.FloatField(blank=True, null=True)
+	longitude = models.FloatField(blank=True, null=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+	suspected_species = models.ForeignKey(
+		Snake,
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name="sightings",
+	)
+
+	class Meta:
+		ordering = ["-created_at"]
+		indexes = [
+			models.Index(fields=["created_at"]),
+			models.Index(fields=["was_bitten"]),
+		]
+
+	def __str__(self):
+		return self.headline
+
+
+class Referral(models.Model):
+	class Status(models.TextChoices):
+		PENDING = "pending", "Pending"
+		SENT = "sent", "Sent"
+		ACKNOWLEDGED = "acknowledged", "Acknowledged"
+
+	case = models.ForeignKey(PatientCase, on_delete=models.CASCADE, related_name="referrals")
+	destination_facility = models.ForeignKey(
+		HealthFacility,
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name="referrals",
+	)
+	notes = models.TextField(blank=True)
+	shared_patient_details = models.BooleanField(default=True)
+	status = models.CharField(max_length=20, choices=Status.choices, default=Status.SENT)
+	sent_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["-sent_at"]
+		indexes = [
+			models.Index(fields=["status"]),
+			models.Index(fields=["sent_at"]),
+		]
+
+	def __str__(self):
+		return f"Referral for {self.case.case_id}"

@@ -1,0 +1,309 @@
+VenomGuardAI Web App – Feature Description and Replication Guide
+
+1. Product purpose
+VenomGuardAI is a Django-based snakebite response and health guidance web app designed for two user groups:
+- Community members who need basic first-aid guidance and risk awareness
+- Healthcare workers or CHWs who manage suspected snakebite cases, track referrals, and identify nearby antivenom stock
+
+The app is built to help users quickly assess likely snakebite risk from symptoms, locate or understand first-aid steps, learn local snake species and risk patterns, and coordinate urgent referral to the nearest stocked facility.
+
+2. Project structure
+This app lives in the Django project folder named snakebite_care_gh/ and uses the main Django app named snakebite.
+
+Main app files:
+- snakebite/models.py: database models for snakes, facilities, symptom data, training resources, assessments, and cases
+- snakebite/services.py: risk engine for symptom-based risk scoring and nearest facility calculation
+- snakebite/views.py: all application logic for access, dashboards, assessments, referrals, and API endpoints
+- snakebite/urls.py: page routes and API routes
+- snakebite/templates/snakebite/: web UI templates for all screens
+- snakebite/serializers.py: DRF serializers for API payloads
+- snakebite/management/commands/seed_snakebite_data.py: demo data seeding script
+
+3. Core user flow
+The app uses a password-controlled access flow before any protected page becomes visible.
+
+Access flow:
+- User reaches /snakebite/access/
+- They must enter password: "Dr.EricNyarko"
+- After password verification, they select nationality and member type
+- Based on member type, they are redirected to:
+  - community dashboard for general users
+  - CHW dashboard for healthcare workers
+
+This access pattern is enforced by the snakebite_password_required decorator and session-based flags.
+
+4. User-facing features
+
+A. Community member experience
+1. Community landing screen
+- Shows a welcoming dashboard for community users
+- Displays their selected nationality and member type
+- Provides navigation to bite assessment, first aid, nearest help, and education sections
+
+2. Bite assessment workflow
+- User selects likely symptoms from a checklist
+- System evaluates the selected symptoms using a symptom-weighted risk engine
+- Returns:
+  - risk level (Low / Medium / High)
+  - likely venom type (Neurotoxic / Hemotoxic / Uncertain)
+  - likely snake species
+  - recommended actions
+  - severity score
+
+3. Risk result page
+- Presents the calculated assessment result
+- Provides next-step guidance like urgent referral and first-aid instructions
+- Links to nearest help or emergency follow-up
+
+4. Nearest help screen
+- Shows nearby antivenom-capable healthcare facilities
+- Uses latitude and longitude to calculate nearest available resource
+- Useful for emergency triage and referral planning
+
+5. First aid and training content
+- Displays step-by-step first aid guidance for snakebite response
+- Includes audience-specific instructions for first responders and health workers
+- Provides educational material categories such as guidelines, posters, and videos
+
+6. Snake information and regional risk map
+- Lists snakes by region
+- Displays snake metadata including common name, scientific name, venom type, description, region distribution, and associated symptoms
+- Lets users filter by region and inspect details for a selected snake species
+
+B. Healthcare worker / CHW experience
+1. Merged CHW entry flow
+- The healthcare worker experience has been simplified into a single live dashboard screen.
+- /snakebite/chw-home/ is now a compatibility redirect that sends users directly to /snakebite/chw-dashboard/.
+- This removes duplication between the “home” and “dashboard” screens while keeping the route available for older links.
+
+2. CHW dashboard screen
+- Presents a healthcare-worker interface with a greeting, role label, notification indicator, and a summary card grid.
+- Displays operational statistics for:
+  - active cases
+  - open high-risk alerts
+  - pending referrals
+  - learning resources
+- Each metric card is clickable and filters the record list to the relevant dataset.
+- The dashboard metric count and the number of records shown are intentionally sourced from the same query to remain consistent.
+
+3. Case detail view
+- Shows the active snakebite case record
+- Displays patient details, symptoms, risk severity, and referral status
+- Lets CHW view and manage the case in one place
+- Case rows and alert items are clickable and link directly to the full case record
+
+4. Referral workflow
+- CHW can choose a destination facility from available facilities
+- Can attach a referral note and indicate whether to share patient details
+- Referral is saved as a Referral record and case status changes to in transit
+
+5. Alerts and recent activity
+- Recent alerts are generated from the same high-risk case query used by the alert metric.
+- All alert entries and case rows are clickable.
+- New cases are flagged with a visual ribbon indicator based on recency (for example, created within the most recent 24-hour period).
+
+6. Antivenom stock map
+- Displays all antivenom-available facilities in map-like overview
+- Includes facility type, region, coordinates, stock status, cost, and contact detail
+
+5. Risk engine logic
+The core risk logic is implemented in SnakebiteRiskEngine in snakebite/services.py.
+
+Core behavior:
+- Symptoms are normalized to lowercase strings
+- Known symptom markers define likely venom categories
+- Neurotoxic markers include symptoms such as ptosis, drooping eyelids, muscle weakness, respiratory distress
+- Hemotoxic markers include bleeding gums, dark urine, bruising, systemic swelling, abnormal bleeding
+- Severity score is accumulated from symptom weights and venom markers
+- Risk categories are assigned based on thresholds
+- Risk result includes likely snake species and recommended actions
+
+Example logic:
+- neurotoxic symptoms only -> HIGH RISK, predicted = Neurotoxic
+- hemotoxic symptoms only -> HIGH RISK, predicted = Hemotoxic
+- both categories present -> HIGH RISK, predicted = Uncertain
+- aggregate severity score >= 40 -> HIGH RISK
+- aggregate severity score >= 20 -> MEDIUM RISK
+- otherwise -> LOW RISK
+
+6. Data model overview
+The app stores structured records for the following entities:
+
+- Region
+  - name
+  - code
+
+- HealthFacility
+  - name
+  - facility_type (district_hospital, health_center, chps)
+  - region
+  - latitude, longitude
+  - contact_number
+  - antivenom_available
+  - antivenom_cost
+  - last_stock_update
+
+- Snake
+  - common_name
+  - scientific_name
+  - venom_type (hemotoxic, neurotoxic, cytotoxic)
+  - region_distribution
+  - description
+  - visual_features
+  - image
+
+- Symptom
+  - name
+  - slug
+  - description
+  - body_system
+
+- EnvenomationType
+  - type_name
+  - target_snakes
+  - associated_symptoms
+
+- PatientAssessment
+  - region
+  - patient_age_group
+  - symptoms_present
+  - severity_score
+  - predicted_envenomation
+  - risk_level
+  - recommended_action
+
+- FirstAidStep
+  - step_number
+  - title
+  - description
+  - do_statement
+  - dont_statement
+  - target_audience
+
+- EducationalMaterial
+  - title
+  - category
+  - file_attachment
+  - video_url
+  - payload_body
+  - downloaded_count
+
+- PatientCase
+  - case_id, patient metadata, symptoms, risk_level, status, created_at, updated_at
+
+- Referral
+  - case
+  - destination_facility
+  - notes
+  - shared_patient_details
+  - status
+  - sent_at
+
+7. API endpoints
+The app exposes a REST API through DRF.
+
+Main routes:
+- /snakebite/api/snakes/
+- /snakebite/api/health-facilities/
+- /snakebite/api/first-aid-steps/
+- /snakebite/api/educational-materials/
+- /snakebite/api/assessments/
+- /snakebite/api/nearby-antivenom-facilities/
+- /snakebite/api/bootstrap/
+
+These endpoints support:
+- retrieving snake info
+- retrieving facility stock data
+- calculating nearby facilities from coordinates
+- creating patient assessments from symptom lists
+- syncing bootstrap data for frontend apps
+
+8. Frontend and templates
+The UI is rendered using Django templates and static CSS/HTML structures.
+
+Template themes include:
+- access page for password and profile setup
+- community dashboards and assessment screens
+- CHW case management screens
+- first aid and education pages
+- stock map page and resource pages
+
+The templates use the app’s own CSS and navigation partials.
+
+9. Security and session controls
+The app does not use a full user authentication system for access. Instead, it uses a custom session gate:
+- Access is granted only after password validation
+- Nationality and member type are stored in session
+- Access is checked with the decorator before protected views are rendered
+- Protected routes redirect to /snakebite/access/ if session access is missing
+
+This is a practical prototype pattern, not a production-grade auth system.
+
+10. Data seeding and demo content
+The project includes a seeding command to create realistic sample data for regions, snakes, facilities, first-aid steps, and education content.
+
+This allows testing of:
+- risk engine behavior
+- facility lookup
+- dashboard metrics
+- CHW case flow
+- outreach training and educational materials
+
+11. How to replicate the app
+To build a similar app from scratch:
+
+A. Create Django project
+- Start a Django project with a main settings file
+- Add a snakebite app
+- Include the app in INSTALLED_APPS and URL config
+
+B. Create the data model
+- Add Region, Snake, Symptom, Facility, Assessment, Case, Referral, EducationalMaterial, FirstAidStep models
+- Add indexes and ordering for quick lookups
+
+C. Create the risk engine
+- Define a symptom-to-risk mapping
+- Normalize symptom strings
+- Compute severity score
+- Assign risk levels and recommended actions
+- Return likely venom type and snake matches
+
+D. Build views and routes
+- Create access gate
+- Create community and CHW entry pages
+- Add assessment, results, nearest-help, case details, and referral views
+- Wire all routes in urls.py
+
+E. Add templates
+- Build a clean mobile-friendly UI for community and healthcare flows
+- Include cards, buttons, navs, and summary sections
+- Keep page logic simple and push business rules to views and services
+
+F. Add facility logic
+- Use latitude/longitude to compute nearest antivenom facilities with a haversine formula
+- Filter facilities by antivenom_available status
+- Expose via API and embed in UI
+
+G. Secure access flow
+- Use custom session variables for password verification and profile selection
+- Redirect unauthenticated users to the access screen
+
+H. Create APIs
+- Use Django REST Framework viewsets and APIView endpoints
+- Expose snake, facility, first-aid, assessment, and bootstrap data
+
+I. Seed demo content
+- Insert realistic regions, symptoms, snakes, facilities, and educational items
+- Validate the flow end-to-end through the interface
+
+12. Summary
+VenomGuardAI is a snakebite response web application built on Django. It combines symptom triage, first-aid education, case management for healthcare workers, referral workflows, and local antivenom facility mapping. The app is built around a clear session-based role flow, rule-based risk engine, and structured data model, making it suitable for prototyping or extension into a larger public health decision-support platform.
+
+13. Important implementation note
+This app is a functional prototype rather than a full production-grade healthcare platform. It demonstrates the core workflow clearly but should still be hardened with:
+- real authentication and role management
+- stronger input validation and auditing
+- persistent encrypted storage for sensitive patient data
+- production-grade deployment, caching, and monitoring
+
+This description is intentionally written in a way that another AI or developer can understand the app’s architecture and reproduce the same overall behavior without guessing.

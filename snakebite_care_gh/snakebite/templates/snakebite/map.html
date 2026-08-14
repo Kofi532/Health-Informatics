@@ -1,0 +1,52 @@
+{% extends 'snakebite/base.html' %}
+{% block title %}Map{% endblock %}
+{% block content %}
+    <div class="section" style="padding: 16px;">
+        <div class="section-header">
+            <h2 class="section-title">Map</h2>
+            <span class="pill">Live locations</span>
+        </div>
+
+        <div class="map-card" style="margin-bottom: 16px;">
+            {% for facility in facilities %}
+                {% if facility.latitude and facility.longitude %}
+                    <span class="map-pin facility" style="left:{{ facility.longitude|add:'20' }}%; top:{{ facility.latitude|add:'20' }}%;"></span>
+                {% endif %}
+            {% endfor %}
+            {% for sighting in sightings %}
+                {% if sighting.latitude and sighting.longitude %}
+                    <span class="map-pin sighting" style="left:{{ sighting.longitude|add:'15' }}%; top:{{ sighting.latitude|add:'25' }}%;"></span>
+                {% endif %}
+            {% endfor %}
+            <div style="position:relative; z-index:1; color: var(--muted);">Map view</div>
+        </div>
+
+        <div class="card">
+            <div class="section-header" style="margin-bottom: 10px;">
+                <span class="muted">Facilities & sightings</span>
+            </div>
+            {% for facility in facilities %}
+                <div class="list-item">
+                    <div>
+                        <strong>{{ facility.name }}</strong><br>
+                        <span class="muted">{{ facility.region.name }}</span>
+                    </div>
+                    <span class="pill">Available</span>
+                </div>
+            {% empty %}
+                <div class="muted">No antivenom facilities found.</div>
+            {% endfor %}
+            {% for sighting in sightings %}
+                <div class="list-item">
+                    <div>
+                        <strong>{{ sighting.headline }}</strong><br>
+                        <span class="muted">{{ sighting.time_seen }}</span>
+                    </div>
+                    <span class="pill">Report</span>
+                </div>
+            {% empty %}
+                <div class="muted">No recent sightings available.</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

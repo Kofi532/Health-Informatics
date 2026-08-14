@@ -6,6 +6,14 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 SNAKEBITE_PROJECT_DIR = BASE_DIR / 'snakebite_care_gh'
 
+
+def env_list(name, default=''):
+    value = os.getenv(name, default)
+    if not value:
+        return []
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+
 # Ensure the nested Snakebite project package is importable from this Django project.
 if SNAKEBITE_PROJECT_DIR.exists():
     snakebite_path = str(SNAKEBITE_PROJECT_DIR)
@@ -17,17 +25,15 @@ SNAKEBITE_APP_PASSWORD = os.getenv('SNAKEBITE_APP_PASSWORD', 'Dr.EricNyarko')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in {'1', 'true', 'yes', 'on'}
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,testserver').split(',')
-    if host.strip()
-]
+ALLOWED_HOSTS = env_list(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,0.0.0.0,testserver,.pythonanywhere.com'
+)
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
-    if origin.strip()
-]
+CSRF_TRUSTED_ORIGINS = env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:8000,http://127.0.0.1:8000,https://localhost:8000,https://127.0.0.1:8000'
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -66,6 +72,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'snakebite.context_processors.venomguard_profile',
             ],
         },
     },
@@ -108,6 +115,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGIN_URL = '/health/login/'
 LOGIN_REDIRECT_URL = '/health/'
@@ -132,22 +141,24 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS - allow local dev clients
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:8000',
-]
+# CORS - allow local dev clients and PythonAnywhere domains through env override
+CORS_ALLOWED_ORIGINS = env_list(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000,http://localhost:8000,http://127.0.0.1:8000'
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_REFERRER_POLICY = 'same-origin'
 
 # Email Configuration (for development, uses console backend; change for production)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Risk Result | VenomGuard AI</title>
+  <style>
+    :root {
+      --bg: #f5f7f3;
+      --panel: #ffffff;
+      --text: #17332d;
+      --muted: #526d65;
+      --danger: #d12d2d;
+      --danger-soft: #fff0f0;
+      --primary: #0f7a65;
+      --border: #dfe7e1;
+      --shadow: 0 12px 28px rgba(18, 38, 33, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .screen {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--bg);
+      padding: 22px 16px 90px;
+    }
+
+    .status-badge {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid rgba(209, 45, 45, 0.22);
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 1.8rem;
+      line-height: 1.25;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 12px;
+      color: var(--text);
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    .cta-primary {
+      width: 100%;
+      background: var(--danger);
+      color: white;
+      border: none;
+      min-height: 54px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 800;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 20px rgba(209, 45, 45, 0.18);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="status-badge">⚠️ High Risk - Seek care immediately</div>
+
+    <h2>What to do now</h2>
+
+    <section class="card">
+      <p class="card-title">First aid</p>
+      <ol>
+        <li>Keep the person calm and still</li>
+        <li>Remove tight items</li>
+        <li>Do NOT cut or suck the wound</li>
+        <li>Go to a health facility immediately</li>
+      </ol>
+    </section>
+
+    <a href="{% url 'snakebite:community_nearest_help' %}" class="cta-primary">Find Nearest Help</a>
+
+    {% include 'snakebite/_community_bottom_nav.html' %}
+  </main>
+</body>
+</html>

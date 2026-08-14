@@ -1,0 +1,65 @@
+{% with current_name=request.resolver_match.url_name %}
+<nav class="community-bottom-nav" aria-label="Community navigation">
+  <a href="{% url 'snakebite:community_home' %}" class="nav-item {% if current_name == 'community_home' or current_name == 'community_bite_assessment' or current_name == 'community_risk_result' %}active{% endif %}">
+    <span class="nav-icon">🕒</span>
+    <span>Timeline</span>
+  </a>
+  <a href="{% url 'snakebite:map' %}" class="nav-item {% if current_name == 'map' %}active{% endif %}">
+    <span class="nav-icon">📍</span>
+    <span>Map</span>
+  </a>
+  <a href="{% url 'snakebite:report' %}" class="nav-item {% if current_name == 'report' %}active{% endif %}">
+    <span class="nav-icon">⚑</span>
+    <span>Report</span>
+  </a>
+  <a href="{% url 'snakebite:settings' %}" class="nav-item {% if current_name == 'settings' %}active{% endif %}">
+    <span class="nav-icon">⚙️</span>
+    <span>Settings</span>
+  </a>
+</nav>
+
+<style>
+  .community-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    background: rgba(10, 17, 24, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.25);
+    padding: 8px 10px calc(12px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(12px);
+  }
+
+  .community-bottom-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+    color: #9aa3af;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 4px 6px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  .community-bottom-nav .nav-item.active {
+    color: #f5b642;
+    background: rgba(245, 182, 66, 0.08);
+    border-color: rgba(245, 182, 66, 0.4);
+  }
+
+  .community-bottom-nav .nav-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+</style>
+{% endwith %}

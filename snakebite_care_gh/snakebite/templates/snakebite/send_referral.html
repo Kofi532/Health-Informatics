@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VenomGuard AI | Send Referral</title>
+  <style>
+    :root {
+      --bg: #eefaf3;
+      --panel: #ffffff;
+      --text: #16352e;
+      --muted: #587067;
+      --primary: #0d7b5a;
+      --primary-dark: #0b5f48;
+      --line: #dfe8e1;
+      --soft: #edf9f1;
+      --success: #28a68d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #eef8f2, #f6faf7 100%);
+      color: var(--text);
+    }
+    .screen {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 18px 16px 88px;
+      background: var(--bg);
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), #1fa17c);
+      color: white;
+      font-size: 18px;
+    }
+    .title {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 10px 22px rgba(17, 62, 47, 0.05);
+      margin-bottom: 16px;
+    }
+    .meta {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    select, textarea, input[type="checkbox"] {
+      width: 100%;
+    }
+    select, textarea {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fbf9;
+      padding: 12px 12px;
+      font-size: 0.96rem;
+      color: var(--text);
+      resize: vertical;
+    }
+    textarea {
+      min-height: 120px;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0 8px;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 12px;
+      border: none;
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+    .button.primary {
+      background: var(--primary);
+      color: white;
+    }
+    .button.secondary {
+      background: var(--soft);
+      color: var(--primary-dark);
+      border: 1px solid var(--line);
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    {% include 'snakebite/_profile_nav.html' %}
+    <header class="topbar" aria-label="Referral header">
+      <div class="brand-mark" aria-hidden="true">📤</div>
+      <h1 class="title">Send Referral</h1>
+    </header>
+
+    <section class="panel">
+      <p class="meta"><strong>{{ case.case_id }}</strong> • {{ case.patient_name }} • {{ case.location }}</p>
+      <form method="post">
+        {% csrf_token %}
+        <label for="facility">Destination Facility</label>
+        <select id="facility" name="facility_id">
+          {% if facility %}
+            <option value="{{ facility.pk }}">{{ facility.name }} ({{ facility.get_facility_type_display }})</option>
+          {% endif %}
+          {% for available_facility in facilities|default:'' %}
+            <option value="{{ available_facility.pk }}">{{ available_facility.name }}</option>
+          {% endfor %}
+        </select>
+
+        <label for="referral_note">Referral Note</label>
+        <textarea id="referral_note" name="referral_note">{{ default_note }}</textarea>
+
+        <div class="checkbox-row">
+          <input id="share_details" type="checkbox" name="share_details" checked>
+          <label for="share_details" style="margin:0; letter-spacing: normal; text-transform: none; font-weight: 600; display: inline;">Share patient details with receiving facility</label>
+        </div>
+
+        <div class="button-row">
+          <button class="button primary" type="submit">Send</button>
+          <a class="button secondary" href="{% url 'snakebite:case_details' pk=case.pk %}">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

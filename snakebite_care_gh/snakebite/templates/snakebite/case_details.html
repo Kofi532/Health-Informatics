@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VenomGuard AI | Case Details</title>
+  <style>
+    :root {
+      --brand-green: #0F5A37;
+      --brand-green-deep: #0A3E2B;
+      --brand-green-soft: #EAF6F0;
+      --bg: #F8F9FA;
+      --card: #F3F4F6;
+      --panel: #FFFFFF;
+      --text: #1E2A2B;
+      --muted: #5F6F6B;
+      --light-line: #DDE3E1;
+      --danger: #D92D20;
+      --danger-soft: #FDECEC;
+      --dark-green: #123D32;
+      --shadow: rgba(15, 90, 55, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
+    body { min-height: 100vh; display: flex; justify-content: center; }
+    .app-shell { position: relative; width: 100%; max-width: 480px; min-height: 100vh; background: var(--bg); padding: 16px 16px 112px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .topbar__left, .topbar__right { display: flex; align-items: center; gap: 10px; min-width: 52px; }
+    .topbar__right { justify-content: flex-end; }
+    .icon-btn {
+      width: 36px; height: 36px; border: 1px solid var(--light-line); border-radius: 12px; background: var(--panel);
+      color: var(--text); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; text-decoration: none;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.03);
+    }
+    .screen-title { margin: 0; font-size: 1.08rem; font-weight: 800; color: var(--text); }
+    .case-list-card, .summary-card, .detail-card { background: var(--card); border: 1px solid var(--light-line); border-radius: 18px; padding: 16px; margin-bottom: 16px; box-shadow: 0 8px 18px var(--shadow); }
+    .case-list-card h2 { margin: 0 0 12px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .case-list { display: flex; flex-direction: column; gap: 10px; }
+    .case-list-item {
+      display: block; text-decoration: none; color: inherit; padding: 12px 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--light-line);
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .case-list-item.active { border-color: var(--brand-green); background: var(--brand-green-soft); }
+    .case-list-item:active { transform: scale(0.99); }
+    .case-topline { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .case-id { margin: 0; font-size: 0.92rem; font-weight: 800; color: var(--brand-green-deep); }
+    .status-pill {
+      display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      background: rgba(15, 90, 55, 0.08); color: var(--brand-green-deep);
+    }
+    .case-meta { margin: 6px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.45; font-weight: 700; }
+    .meta-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--light-line); }
+    .meta-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .meta-label { margin: 0; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .meta-value { margin: 0; color: var(--text); font-size: 0.96rem; font-weight: 700; text-align: right; line-height: 1.5; }
+    .section-label { margin: 0 0 10px; color: var(--muted); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .risk-badge {
+      display: inline-flex; align-items: center; padding: 7px 12px; border-radius: 999px; background: var(--danger-soft); border: 1px solid rgba(217, 45, 32, 0.15);
+      color: var(--danger); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .symptom-list { margin: 0; padding-left: 18px; line-height: 1.9; color: var(--text); font-weight: 700; }
+    .symptom-list li + li { margin-top: 2px; }
+    .cta-stack { position: fixed; left: 50%; transform: translateX(-50%); bottom: 76px; width: min(480px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 12px; z-index: 10; }
+    .primary-btn, .secondary-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 14px; text-decoration: none; font-size: 0.98rem; font-weight: 800; letter-spacing: 0.02em; transition: transform 0.15s ease; }
+    .primary-btn:active, .secondary-btn:active { transform: scale(0.99); }
+    .primary-btn { background: var(--brand-green); color: #fff; box-shadow: 0 10px 20px rgba(15, 90, 55, 0.18); }
+    .secondary-btn { background: transparent; color: var(--brand-green-deep); border: 1.5px solid var(--brand-green-deep); }
+    .bottom-nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(480px, 100%); background: rgba(255,255,255,0.96); border-top: 1px solid var(--light-line); display: grid; grid-template-columns: repeat(4, 1fr); backdrop-filter: blur(8px); z-index: 20; }
+    .nav-item { padding: 12px 8px 14px; text-decoration: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 0.72rem; font-weight: 700; }
+    .nav-item.active { color: var(--brand-green); font-weight: 800; }
+    .nav-item__icon { font-size: 1.2rem; line-height: 1; }
+    @media (max-width: 390px) { .app-shell { padding-left: 12px; padding-right: 12px; } .screen-title { font-size: 1rem; } }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    {% include 'snakebite/_profile_nav.html' %}
+
+    <header class="topbar" aria-label="Case details header">
+      <div class="topbar__left">
+        <a class="icon-btn" href="{% url 'snakebite:chw_home' %}" aria-label="Back to active cases">←</a>
+      </div>
+      <h1 class="screen-title">Case Details</h1>
+      <div class="topbar__right">
+        <a class="icon-btn" href="#" aria-label="Save case">🔖</a>
+        <a class="icon-btn" href="#" aria-label="Settings">⚙</a>
+      </div>
+    </header>
+
+    <section class="case-list-card" aria-label="Active cases list">
+      <h2>Active Cases</h2>
+      <div class="case-list">
+        {% for active_case in active_cases %}
+          <a class="case-list-item {% if active_case.pk == case.pk %}active{% endif %}" href="{% url 'snakebite:case_details' pk=active_case.pk %}">
+            <div class="case-topline">
+              <p class="case-id">{{ active_case.case_id }}</p>
+              <span class="status-pill">{{ active_case.get_status_display }}</span>
+            </div>
+            <p class="case-meta">{{ active_case.patient_name }} • {{ active_case.location }}</p>
+          </a>
+        {% empty %}
+          <p class="case-meta">No active cases available.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="summary-card" aria-label="Case summary metadata">
+      <div class="meta-row">
+        <p class="meta-label">Case ID</p>
+        <p class="meta-value">{{ case.case_id }}</p>
+      </div>
+      <div class="meta-row">
+        <p class="meta-label">Date</p>
+        <p class="meta-value">{{ case.created_at|date:"d M Y, H:i" }}</p>
+      </div>
+      <div class="meta-row">
+        <p class="meta-label">Patient</p>
+        <p class="meta-value">{{ case.patient_name }}</p>
+      </div>
+      <div class="meta-row">
+        <p class="meta-label">Age / Sex</p>
+        <p class="meta-value">Age: {{ case.patient_age }} | {{ case.get_gender_display }}</p>
+      </div>
+      <div class="meta-row">
+        <p class="meta-label">Location</p>
+        <p class="meta-value">{{ case.location }}</p>
+      </div>
+    </section>
+
+    {% if case.photo %}
+      <section class="detail-card" aria-label="Case photo">
+        <p class="section-label">Patient Photo</p>
+        <img src="{{ case.photo.url }}" alt="Patient case photo for {{ case.patient_name }}" style="width:100%; max-height:240px; object-fit:cover; border-radius:14px; border:1px solid var(--light-line); background:#f3f4f6;" />
+      </section>
+    {% endif %}
+
+    <section class="detail-card" aria-label="Clinical assessment">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap:12px;">
+        <p class="section-label" style="margin:0;">Assessment</p>
+        <span class="risk-badge">{{ case.get_risk_level_display }}</span>
+      </div>
+
+      <div class="meta-row" style="padding-top:0;">
+        <p class="meta-label">Suspected Snake Type</p>
+        <p class="meta-value">{{ case.suspected_snake_type|default:'Viper (Likely)' }}</p>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <p class="section-label">Symptoms</p>
+        <ul class="symptom-list">
+          {% for symptom in symptoms %}
+            <li>{{ symptom }}</li>
+          {% empty %}
+            <li>Severe pain</li>
+            <li>Swelling</li>
+            <li>Bleeding</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <div class="cta-stack">
+      <a class="primary-btn" href="{% url 'snakebite:send_referral' pk=case.pk %}">Send Referral</a>
+      <a class="secondary-btn" href="tel:+233200000000">Call Facility</a>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Bottom navigation">
+    <a class="nav-item" href="{% url 'snakebite:chw_home' %}">
+      <span class="nav-item__icon">⌂</span>
+      <span>Home</span>
+    </a>
+    <a class="nav-item active" href="{% url 'snakebite:case_details' pk=case.pk %}">
+      <span class="nav-item__icon">▣</span>
+      <span>Cases</span>
+    </a>
+    <a class="nav-item" href="{% url 'snakebite:chw_dashboard' %}">
+      <span class="nav-item__icon">⚑</span>
+      <span>Alerts</span>
+    </a>
+    <a class="nav-item" href="{% url 'snakebite:settings' %}">
+      <span class="nav-item__icon">⚙</span>
+      <span>Settings</span>
+    </a>
+  </nav>
+</body>
+</html>

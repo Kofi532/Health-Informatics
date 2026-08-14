@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ metric_label }} | VenomGuard AI</title>
+  <style>
+    :root {
+      --bg: #edf5f0;
+      --panel: #ffffff;
+      --text: #17332d;
+      --muted: #5a736a;
+      --primary: #0d7b5a;
+      --primary-dark: #0b5f48;
+      --line: #dfe8e2;
+      --soft: #f3faf6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); }
+    .screen { max-width: 480px; margin: 0 auto; min-height: 100vh; padding: 18px 16px 90px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .title { margin:0; font-size:1.35rem; font-weight:900; }
+    .back-link { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:12px; background:var(--panel); border:1px solid var(--line); text-decoration:none; color:var(--text); }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 8px 18px rgba(17,62,47,0.04); }
+    .list { display:grid; gap:12px; }
+    .item { display:block; text-decoration:none; color:inherit; border:1px solid var(--line); border-radius:14px; background:var(--soft); padding:12px 14px; }
+    .item-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .case-id { margin:0; font-weight:800; }
+    .status { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:6px 8px; font-size:0.68rem; font-weight:800; background:rgba(13,123,90,0.08); color:var(--primary-dark); }
+    .meta { margin:8px 0 0; color:var(--muted); font-size:0.82rem; line-height:1.5; }
+    .empty { color: var(--muted); font-weight:700; }
+    .bottom-nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(480px, 100%); background: rgba(255,255,255,0.96); border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(4,1fr); padding:10px 8px 14px; z-index:20; }
+    .nav-item { display:flex; flex-direction:column; align-items:center; justify-content:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700; gap:4px; }
+    .nav-item.active { color: var(--primary-dark); }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <header class="topbar">
+      <a class="back-link" href="{% url 'snakebite:chw_home' %}" aria-label="Back to dashboard">←</a>
+      <h1 class="title">{{ metric_label }}</h1>
+      <div style="width:38px;"></div>
+    </header>
+
+    <section class="panel">
+      <div class="list">
+        {% for case in cases %}
+          <a class="item" href="{% url 'snakebite:case_details' pk=case.pk %}">
+            <div class="item-top">
+              <p class="case-id">{{ case.case_id }}</p>
+              <span class="status">{{ case.get_status_display }}</span>
+            </div>
+            <p class="meta">{{ case.patient_name }} • {{ case.location }} • {{ case.created_at|date:'d M Y' }}</p>
+          </a>
+        {% empty %}
+          <div class="empty">No records found for this metric.</div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Bottom navigation">
+    <a class="nav-item" href="{% url 'snakebite:chw_home' %}"><span>⌂</span><span>Home</span></a>
+    <a class="nav-item" href="{% if latest_case %}{% url 'snakebite:case_details' pk=latest_case.pk %}{% else %}{% url 'snakebite:chw_home' %}{% endif %}"><span>▣</span><span>Cases</span></a>
+    <a class="nav-item" href="{% url 'snakebite:chw_dashboard' %}"><span>⚑</span><span>Alerts</span></a>
+    <a class="nav-item" href="{% url 'snakebite:settings' %}"><span>⚙</span><span>Settings</span></a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,103 @@
+{% extends 'snakebite/base.html' %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+    <div class="section" style="padding: 16px;">
+        <div class="section-header">
+            <h2 class="section-title">Settings</h2>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="card" style="margin-bottom: 14px;">
+                <label class="muted" for="language">Language</label>
+                <select id="language" name="language" class="field">
+                    <option value="English" {% if language == 'English' %}selected{% endif %}>English</option>
+                    <option value="French" {% if language == 'French' %}selected{% endif %}>French</option>
+                    <option value="Swahili" {% if language == 'Swahili' %}selected{% endif %}>Swahili</option>
+                </select>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <label class="muted" for="alert_radius">Alert radius</label>
+                <select id="alert_radius" name="alert_radius" class="field">
+                    <option value="500m" {% if alert_radius == '500m' %}selected{% endif %}>500m</option>
+                    <option value="1km" {% if alert_radius == '1km' %}selected{% endif %}>1km</option>
+                    <option value="5km" {% if alert_radius == '5km' %}selected{% endif %}>5km</option>
+                    <option value="10km" {% if alert_radius == '10km' %}selected{% endif %}>10km</option>
+                </select>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <span class="muted">Snake Catchers</span>
+                </div>
+                {% if nearest_catchers %}
+                    {% for catcher in nearest_catchers %}
+                        <div class="list-item">
+                            <div>
+                                <strong>{{ catcher.organization_or_name }}</strong><br>
+                                <span class="muted">{{ catcher.region.name }}</span>
+                            </div>
+                            <span class="pill">{{ catcher.phone_number }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <button type="button" class="secondary-btn" style="width:100%;">Find Local Snake Catcher</button>
+                {% endif %}
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <span class="muted">Register</span>
+                </div>
+                <div style="display:grid; gap:10px;">
+                    <select name="provider_type" class="field">
+                        <option value="medical">Register as Medical Provider</option>
+                        <option value="handler">Register as Snake Handler</option>
+                    </select>
+                    <input type="text" name="organization_or_name" class="field" placeholder="Organization or Name">
+                    <input type="text" name="phone_number" class="field" placeholder="Phone number">
+                    <select name="region_id" class="field">
+                        {% for region in regions %}
+                            <option value="{{ region.id }}">{{ region.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" name="register_provider" value="1" class="primary-btn">Submit registration</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <span class="muted">Emergency</span>
+                </div>
+                <a href="tel:{{ emergency_number }}" class="danger-btn" style="width:100%;">Call {{ emergency_number }} (Ghana)</a>
+            </div>
+
+            <div class="card" style="margin-bottom: 14px;">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <span class="muted">Safety tips</span>
+                </div>
+                <ul style="padding-left:18px; color: var(--muted); line-height:1.8; margin:0;">
+                    <li>Do not approach or attempt to catch the snake.</li>
+                    <li>Slowly back away and maintain a safe distance.</li>
+                    <li>Take a photo from a safe distance if possible.</li>
+                    <li>Contact a local snake catcher immediately.</li>
+                    <li>If bitten, seek medical attention immediately.</li>
+                </ul>
+            </div>
+
+            <div class="card" style="margin-bottom: 8px;">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <span class="muted">Links</span>
+                </div>
+                <div style="display:grid; gap:8px; color: var(--muted);">
+                    <span>About &amp; Legal</span>
+                    <span>Partners</span>
+                    <span>Share</span>
+                    <span>Rate Us</span>
+                    <span>Version Info: v1.0</span>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}

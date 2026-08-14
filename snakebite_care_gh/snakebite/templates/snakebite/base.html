@@ -1,0 +1,301 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VenomGuardAI{% endblock %}</title>
+    <style>
+        :root {
+            --bg: #12151E;
+            --panel: #1B202E;
+            --panel-2: #242B3A;
+            --card: #1D2533;
+            --line: rgba(255,255,255,0.08);
+            --text: #F5F7FA;
+            --muted: #A7B0C0;
+            --gold: #F5B800;
+            --gold-soft: rgba(245,184,0,0.18);
+            --red: #FF3B30;
+            --green: #2ECC71;
+            --shadow: 0 18px 40px rgba(0,0,0,0.24);
+        }
+
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        body {
+            padding-bottom: 96px;
+        }
+        a { color: inherit; text-decoration: none; }
+        .page-shell {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 18px 16px 110px;
+        }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            backdrop-filter: blur(10px);
+            background: rgba(18,21,30,0.9);
+            border-bottom: 1px solid var(--line);
+        }
+        .topbar-inner {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand { font-weight: 800; letter-spacing: 0.03em; }
+        .brand-mark {
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--gold), #F8D76B);
+            border-radius: 10px;
+            align-items: center;
+            justify-content: center;
+            color: #111827;
+            font-weight: 900;
+        }
+        .pill {
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--line);
+            color: var(--muted);
+        }
+        .section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding: 0 2px;
+        }
+        .section-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .muted { color: var(--muted); }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px;
+        }
+        .primary-btn,
+        .secondary-btn,
+        .danger-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+        .primary-btn {
+            background: linear-gradient(135deg, var(--gold), #ffd14d);
+            color: #111827;
+        }
+        .secondary-btn {
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            border-color: var(--line);
+        }
+        .danger-btn {
+            background: rgba(255,59,48,0.12);
+            color: #FF8D87;
+            border-color: rgba(255,59,48,0.35);
+        }
+        .field {
+            width: 100%;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            color: var(--text);
+            padding: 12px 14px;
+            font-size: 15px;
+            margin-top: 8px;
+        }
+        textarea.field { min-height: 110px; resize: vertical; }
+        select.field, input.field {
+            appearance: none;
+        }
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.02);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text);
+        }
+        .chip.active {
+            background: var(--gold-soft);
+            border-color: rgba(245,184,0,0.35);
+            color: #ffd867;
+        }
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 30;
+            background: rgba(18,21,30,0.96);
+            border-top: 1px solid var(--line);
+            backdrop-filter: blur(12px);
+        }
+        .bottom-nav-inner {
+            max-width: 480px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            padding: 8px 10px 16px;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--muted);
+            font-size: 11px;
+            padding: 8px 4px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .nav-item.active {
+            color: #ffd867;
+            background: rgba(245,184,0,0.08);
+        }
+        .nav-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .alert-box {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,59,48,0.35);
+            background: rgba(255,59,48,0.09);
+            color: #FFB1AC;
+            margin-bottom: 12px;
+        }
+        .success-box {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(46,204,113,0.35);
+            background: rgba(46,204,113,0.1);
+            color: #A7F0C1;
+            margin-bottom: 12px;
+        }
+        .map-card {
+            background: linear-gradient(180deg, #1c2535, #161d29);
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            position: relative;
+            overflow: hidden;
+        }
+        .map-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .map-pin {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+        }
+        .map-pin.facility { background: var(--gold); }
+        .map-pin.sighting { background: var(--red); }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .list-item:last-child { border-bottom: none; }
+        @media (min-width: 620px) {
+            body { padding-bottom: 70px; }
+            .page-shell { padding-top: 26px; }
+        }
+    </style>
+    {% block extra_styles %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="brand-mark">V</span>
+                <span class="brand">VenomGuardAI</span>
+            </div>
+            <span class="pill">{% if venomguard_member_type_label %}{{ venomguard_member_type_label }}{% else %}Member{% endif %}</span>
+        </div>
+    </header>
+
+    <div class="page-shell">
+        {% block content %}{% endblock %}
+    </div>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+        <div class="bottom-nav-inner">
+            <a class="nav-item {% if active_tab == 'timeline' %}active{% endif %}" href="{% url 'snakebite:chw_dashboard' %}">
+                <span class="nav-icon">🕒</span>
+                <span>Timeline</span>
+            </a>
+            <a class="nav-item {% if active_tab == 'map' %}active{% endif %}" href="{% url 'snakebite:map' %}">
+                <span class="nav-icon">📍</span>
+                <span>Map</span>
+            </a>
+            <a class="nav-item {% if active_tab == 'report' %}active{% endif %}" href="{% url 'snakebite:report' %}">
+                <span class="nav-icon">⚑</span>
+                <span>Report</span>
+            </a>
+            <a class="nav-item {% if active_tab == 'settings' %}active{% endif %}" href="{% url 'snakebite:settings' %}">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+        </div>
+    </nav>
+</body>
+</html>

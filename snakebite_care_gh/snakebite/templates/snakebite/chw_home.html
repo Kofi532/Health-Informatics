@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VenomGuard AI | CHW Home</title>
+  <style>
+    :root {
+      --bg: #edf5f0;
+      --panel: #ffffff;
+      --panel-alt: #eef9f2;
+      --text: #17332d;
+      --muted: #58716a;
+      --primary: #0d7b5a;
+      --primary-dark: #0b5f48;
+      --secondary: #dcefe7;
+      --accent: #eaf9ef;
+      --danger: #d95555;
+      --warning: #f5af3d;
+      --line: #dfe8e2;
+      --shadow: 0 12px 28px rgba(17, 62, 47, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #ecf4ef, #f3f8f5 28%, #edf3ef 100%);
+      color: var(--text);
+    }
+
+    .screen {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 18px 16px 90px;
+      background: var(--bg);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), #2ea778);
+      color: white;
+      font-size: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .brand-name {
+      margin: 0;
+      font-size: 1.48rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .badge {
+      background: var(--secondary);
+      border: 1px solid rgba(13, 123, 90, 0.2);
+      color: var(--primary-dark);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(15, 114, 89, 0.18), rgba(93, 160, 116, 0.08)), var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .hero-subtitle {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0 0;
+    }
+
+    .metric-card {
+      background: #f8fbf8;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 12px;
+    }
+
+    .metric-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 900;
+      margin: 0 0 4px;
+      color: var(--primary-dark);
+    }
+
+    .metric-label {
+      margin: 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .cases-list,
+    .quick-actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .case-card,
+    .action-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 14px;
+      box-shadow: 0 4px 10px rgba(13, 33, 27, 0.03);
+    }
+
+    .case-head,
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .case-id {
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .status-pill {
+      background: rgba(13, 123, 90, 0.08);
+      color: var(--primary-dark);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .case-meta {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .action-card {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .action-label {
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .action-copy {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 6px 0 0;
+      line-height: 1.45;
+    }
+
+    .cta-bar {
+      position: sticky;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(237, 245, 240, 0.92);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line);
+      padding: 12px 16px 18px;
+      margin: 18px -16px 0;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), #1ca078);
+      color: white;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 800;
+      box-shadow: 0 12px 26px rgba(13, 123, 90, 0.22);
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    {% include 'snakebite/_profile_nav.html' %}
+
+    <header class="topbar">
+      <div class="brand" aria-label="VenomGuard AI brand">
+        <div class="brand-mark" aria-hidden="true">🩺</div>
+        <h1 class="brand-name">VenomGuard AI</h1>
+      </div>
+      <div class="badge">Healthcare Worker</div>
+    </header>
+
+    <section class="hero" aria-labelledby="chw-home-heading">
+      <div class="hero-top">
+        <div>
+          <h2 id="chw-home-heading" class="hero-title">Welcome, {{ user_name }}</h2>
+          <p class="hero-subtitle">{{ role_label }} case visibility dashboard</p>
+        </div>
+      </div>
+
+      <div class="metrics" aria-label="Health worker summary metrics">
+        {% for metric in metric_cards %}
+          <a class="metric-link" href="{% url 'snakebite:case_metric_list' metric=metric.url_param %}">
+            <article class="metric-card">
+              <p class="metric-value">{{ metric.count }}</p>
+              <p class="metric-label">{{ metric.label }}</p>
+            </article>
+          </a>
+        {% empty %}
+          <a class="metric-link" href="{% url 'snakebite:chw_dashboard' %}">
+            <article class="metric-card">
+              <p class="metric-value">{{ active_cases }}</p>
+              <p class="metric-label">Active Cases</p>
+            </article>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div style="margin-top: 18px;">
+      <div class="quick-actions">
+        <a class="action-card" href="{% url 'snakebite:chw_dashboard' %}">
+          <div class="action-row">
+            <p class="action-label">Analytics Dashboard</p>
+            <span aria-hidden="true">→</span>
+          </div>
+          <p class="action-copy">Track daily risk patterns, referrals, and monitoring outcomes.</p>
+        </a>
+        {% if latest_case %}
+          <a class="action-card" href="{% url 'snakebite:case_details' pk=latest_case.pk %}">
+            <div class="action-row">
+              <p class="action-label">Case Details</p>
+              <span aria-hidden="true">→</span>
+            </div>
+            <p class="action-copy">Review current patient symptoms, notes, and assigned response.</p>
+          </a>
+        {% else %}
+          <a class="action-card" href="{% url 'snakebite:report_sighting' %}">
+            <div class="action-row">
+              <p class="action-label">Create a Case</p>
+              <span aria-hidden="true">→</span>
+            </div>
+            <p class="action-copy">No case exists yet. Add a fresh patient record to begin triage.</p>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cta-bar">
+      <a href="{% url 'snakebite:chw_dashboard' %}" class="cta-button">Open Dashboard</a>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Primary navigation" style="position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:min(480px,100%); background:rgba(255,255,255,0.96); border-top:1px solid #dfe8e2; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); z-index:20; padding:10px 8px 14px;">
+    <a href="{% url 'snakebite:chw_home' %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
+      <span style="font-size:1.2rem;">⌂</span>
+      <span>Home</span>
+    </a>
+    <a href="{% url 'snakebite:case_details' pk=latest_case.pk %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
+      <span style="font-size:1.2rem;">▣</span>
+      <span>Cases</span>
+    </a>
+    <a href="{% url 'snakebite:chw_dashboard' %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
+      <span style="font-size:1.2rem;">⚑</span>
+      <span>Alerts</span>
+    </a>
+    <a href="{% url 'snakebite:settings' %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
+      <span style="font-size:1.2rem;">⚙</span>
+      <span>Settings</span>
+    </a>
+  </nav>
+</body>
+</html>
