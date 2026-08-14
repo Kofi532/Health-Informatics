@@ -330,10 +330,17 @@
       <span style="font-size:1.2rem;">⌂</span>
       <span>Home</span>
     </a>
-    <a href="{% url 'snakebite:case_details' pk=latest_case.pk %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
-      <span style="font-size:1.2rem;">▣</span>
-      <span>Cases</span>
-    </a>
+    {% if latest_case %}
+      <a href="{% url 'snakebite:case_details' pk=latest_case.pk %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
+        <span style="font-size:1.2rem;">▣</span>
+        <span>Cases</span>
+      </a>
+    {% else %}
+      <a href="{% url 'snakebite:chw_home' %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
+        <span style="font-size:1.2rem;">▣</span>
+        <span>Cases</span>
+      </a>
+    {% endif %}
     <a href="{% url 'snakebite:chw_dashboard' %}" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#4d665f; font-size:0.72rem; font-weight:700;">
       <span style="font-size:1.2rem;">⚑</span>
       <span>Alerts</span>
